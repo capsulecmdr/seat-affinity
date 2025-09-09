@@ -10,4 +10,6 @@ Route::middleware(['web','auth'])
         Route::get('/test', function () {
             return response('This is a dummy route, nothing here yet.', 200);
         })->name('test');
+
+        Route::get('/about')->name('about');
     });
