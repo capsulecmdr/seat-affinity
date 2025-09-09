@@ -2,7 +2,7 @@
 
 return [
     'admin' => [
-        'label'       => 'affinity::permissions.permission_affinity_admin_label',
-        'description' => 'affinity::permissions.permission_affinity_admin_desc',
+        'label'       => 'affinity::Permissions.permission_affinity_admin_label',
+        'description' => 'affinity::Permissions.permission_affinity_admin_desc',
     ],
 ];
