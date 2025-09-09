@@ -3,5 +3,5 @@
 @section('title', 'Affinity - About')
 
 @section('content')
-
+test
 @endsection

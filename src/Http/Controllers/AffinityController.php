@@ -13,6 +13,6 @@ class AffinityController extends Controller
     {
         $user = Auth::user();
 
-        return view('affinity::about', compact('name'));
+        return view('affinity::about', compact('user'));
     }
 }
