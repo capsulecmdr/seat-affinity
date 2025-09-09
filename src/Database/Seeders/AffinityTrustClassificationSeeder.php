@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use CapsuleCmdr\SeatAffinity\Models\AffinityTrustClassification;
+use CapsuleCmdr\Affinity\Models\AffinityTrustClassification;
 
 class AffinityTrustClassificationSeeder extends Seeder
 {
