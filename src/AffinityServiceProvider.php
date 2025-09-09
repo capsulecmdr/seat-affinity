@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 
-class OsmmServiceProvider extends AbstractSeatPlugin
+class AffinityServiceProvider extends AbstractSeatPlugin
 {
 
     public function boot(Router $router): void
