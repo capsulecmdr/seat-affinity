@@ -3,13 +3,13 @@
 return [
     "affinity"=>[
         "name"=>"Affinity",
-        "icon"=>"fas fa-hexagon-nodes",
+        "icon"=>"fas fa-connectdevelop",
         "route_segment"=>"affinity",
         "permission"=>"affinity.admin",
         "entries"=>[
             [
                 "name"=>"Intel Console",
-                "icon"=>"fas fa-light-emergency-on",
+                "icon"=>"fas fa-satellite-dish",
                 "route"=>"affinity.test",
                 "permission"=>"affinity.admin",
             ],
@@ -21,13 +21,13 @@ return [
             ],
             [
                 "name"=>"Entity Manager",
-                "icon"=>"fas fa-user-shield",
+                "icon"=>"fas fa-id-card",
                 "route"=>"affinity.test",
                 "permission"=>"affinity.admin",
             ],
             [
                 "name"=>"Settings",
-                "icon"=>"fas fa-screwdriver-wrench",
+                "icon"=>"fas fa-tools",
                 "route"=>"affinity.test",
                 "permission"=>"affinity.admin",
             ],
