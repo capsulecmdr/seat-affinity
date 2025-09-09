@@ -6,8 +6,40 @@
     <div class="row">
         <div class="col-md-12">
 
-            @include('web::about.partials.licences')
+            <div class="card">
 
+                <div class="card-header with-border">
+                    <h3 class="card-title">
+                        <i class="fas fa-project-diagram"></i>
+                        SeAT-Affinity
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p>
+                        <strong>SeAT-Affinity</strong> extends SeAT with advanced relationship and trust mapping,
+                        helping you understand how characters, corporations, and alliances are connected.
+                    </p>
+
+                    <ul>
+                        <li>🔗 <strong>Affiliation Mapping</strong> – Visualize and explore connections between characters,
+                            corporations, and alliances.</li>
+                        <li>👥 <strong>Alt Detection</strong> – Identify and group alternate characters under the same user
+                            for easier management.</li>
+                        <li>📊 <strong>Network Insights</strong> – Generate detailed reports on organizational structures
+                            and shared histories.</li>
+                        <li>🛡 <strong>Trust Scores</strong> – Calculate and display affinity scores based on historical
+                            affiliations and overlaps.</li>
+                        <li>⚙ <strong>SeAT Integration</strong> – Designed to seamlessly extend the existing SeAT interface
+                            and permission system.</li>
+                    </ul>
+
+                    <p>
+                        SeAT-Affinity is built to provide <em>clarity, transparency, and confidence</em> when analyzing
+                        complex EVE Online organizations and player networks.
+                    </p>
+                </div>
+
+            </div>
         </div>
     </div>
 
@@ -64,8 +96,10 @@
                     </h3>
                 </div>
                 <div class="card-body">
-                    <p>Have a question, feedback, or just want to get ahold of me?<br/>Ping me on <a href="https://discord.com/users/1206262455731228746" target="_blank">discord</a>.</p>
-                    <p>You can also find me on <a href="https://github.com/Gadgetwhir" target="_blank">github</a> if you want to report a bug.</p>
+                    <p>Have a question, feedback, or just want to get ahold of me?<br />Ping me on <a
+                            href="https://discord.com/users/1206262455731228746" target="_blank">discord</a>.</p>
+                    <p>You can also find me on <a href="https://github.com/Gadgetwhir" target="_blank">github</a> if you
+                        want to report a bug.</p>
                 </div>
 
             </div>
@@ -91,9 +125,11 @@
                                     alt="Nyxforge Dynamics" width="64" height="64">
                                 <div class="media-body">
                                     <p class="text-justify">
-                                        If you have an idea or want to find get involved you can reach out via discord or find me in game over at <b>Nyxforge Dynamics</b>.
+                                        If you have an idea or want to find get involved you can reach out via discord or
+                                        find me in game over at <b>Nyxforge Dynamics</b>.
                                     </p>
-                                    <p>I strongly discurage sending any donations in game, I am a one man show here and get my enjoyment out of people actually using my plugins and tools.</p>
+                                    <p>I strongly discurage sending any donations in game, I am a one man show here and get
+                                        my enjoyment out of people actually using my plugins and tools.</p>
                                 </div>
                             </div>
                         </div>
