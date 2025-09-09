@@ -3,28 +3,21 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use CapsuleCmdr\Affinity\Models\AffinityTrustClassification;
+use Illuminate\Support\Facades\DB;
 
 class AffinityTrustClassificationSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $classifications = [
-            'Trusted',
-            'Verified',
-            'Unverified',
-            'Untrusted',
-            'Flagged',
-        ];
+        $now  = now();
+        $rows = collect(['Trusted','Verified','Unverified','Untrusted','Flagged'])
+            ->map(fn ($t) => ['title' => $t, 'created_at' => $now, 'updated_at' => $now])
+            ->all();
 
-        foreach ($classifications as $title) {
-            AffinityTrustClassification::firstOrCreate(
-                ['title' => $title],
-                ['title' => $title]
-            );
-        }
+        DB::table('affinity_trust_classification')->upsert(
+            $rows,
+            ['title'],     // unique key
+            ['updated_at'] // columns to update on conflict
+        );
     }
 }
