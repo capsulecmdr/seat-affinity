@@ -14,7 +14,7 @@ return new class extends Migration {
                   ->constrained('affinity_entity')
                   ->cascadeOnDelete();
 
-            $table->foreignId('affinity_trust_classification_id')
+            $table->foreignId('affinity_trust_class_id')
                   ->constrained('affinity_trust_classification')
                   ->restrictOnDelete();
 
