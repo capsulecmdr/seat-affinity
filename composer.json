@@ -1,0 +1,26 @@
+{
+    "name": "capsulecmdr/seat-affinity",
+    "description": "SeAT-Affinity",
+    "type": "seat-plugin",
+    "autoload": {
+        "psr-4": {
+            "CapsuleCmdr\\SeatAffinity\\": "src/"
+        },
+        "files":[
+        ]
+    },
+    "authors": [
+        {
+            "name": "Orsiki",
+            "email": "jwlittle13@gmail.com"
+        }
+    ],
+    "require": {},
+    "extra": {
+        "laravel": {
+            "providers": [
+                "CapsuleCmdr\\SeatAffinity\\AffinityServiceProvider"
+            ]
+        }
+    }
+}
