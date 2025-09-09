@@ -16,8 +16,8 @@ class AffinityTrustClassificationSeeder extends Seeder
 
         DB::table('affinity_trust_classification')->upsert(
             $rows,
-            ['title'],     // unique key
-            ['updated_at'] // columns to update on conflict
+            ['title'],
+            ['updated_at']
         );
     }
 }
