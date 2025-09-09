@@ -3,7 +3,7 @@
 return [
     "affinity"=>[
         "name"=>"Affinity",
-        "icon"=>"fas fa-connectdevelop",
+        "icon"=>"fas fa-fingerprint",
         "route_segment"=>"affinity",
         "permission"=>"affinity.admin",
         "entries"=>[
@@ -15,7 +15,7 @@ return [
             ],
             [
                 "name"=>"Trust Center",
-                "icon"=>"fas fa-fingerprint",
+                "icon"=>"fas fa-id-badge",
                 "route"=>"affinity.test",
                 "permission"=>"affinity.admin",
             ],
