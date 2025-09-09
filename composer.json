@@ -19,7 +19,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "CapsuleCmdr\\SeatAffinity\\AffinityServiceProvider"
+                "CapsuleCmdr\\Affinity\\AffinityServiceProvider"
             ]
         }
     }
