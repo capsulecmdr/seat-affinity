@@ -12,7 +12,7 @@ return new class extends Migration {
 
             $table->string('title');
             $table->string('status', 32)->default('new')->index(); // new | acknowledged | closed
-            $table->unsignedBigInteger('acknowledged_by_id')->nullable()->index();
+            $table->unsignedInteger('acknowledged_by_id')->nullable()->index();
             $table->timestamp('acknowledge_date')->nullable();
 
             // optional link to an entity this alert is about
