@@ -4,7 +4,7 @@
     "type": "seat-plugin",
     "autoload": {
         "psr-4": {
-            "CapsuleCmdr\\SeatAffinity\\": "src/"
+            "CapsuleCmdr\\Affinity\\": "src/"
         },
         "files":[
         ]
@@ -19,7 +19,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "CapsuleCmdr\\SeatAffinity\\AffinityServiceProvider"
+                "CapsuleCmdr\\Affinity\\AffinityServiceProvider"
             ]
         }
     }
