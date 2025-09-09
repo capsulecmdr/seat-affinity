@@ -72,7 +72,7 @@ class AffinityServiceProvider extends AbstractSeatPlugin
         $this->add_translations();
 
         //register permissions
-        $this->registerPermissions(__DIR__ . '/Config/Permissions/Permissions.php','osmm');
+        $this->registerPermissions(__DIR__ . '/Config/Permissions/Permissions.php','affinity');
     }
 
     private function addMigrations()
