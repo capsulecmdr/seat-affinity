@@ -21,15 +21,15 @@
                     </p>
 
                     <ul>
-                        <li>🔗 <strong>Affiliation Mapping</strong> – Visualize and explore connections between characters,
+                        <li><strong>Affiliation Mapping</strong> – Visualize and explore connections between characters,
                             corporations, and alliances.</li>
-                        <li>👥 <strong>Alt Detection</strong> – Identify and group alternate characters under the same user
+                        <li><strong>Alt Detection</strong> – Identify and group alternate characters under the same user
                             for easier management.</li>
-                        <li>📊 <strong>Network Insights</strong> – Generate detailed reports on organizational structures
+                        <li><strong>Network Insights</strong> – Generate detailed reports on organizational structures
                             and shared histories.</li>
-                        <li>🛡 <strong>Trust Scores</strong> – Calculate and display affinity scores based on historical
+                        <li><strong>Trust Scores</strong> – Calculate and display affinity scores based on historical
                             affiliations and overlaps.</li>
-                        <li>⚙ <strong>SeAT Integration</strong> – Designed to seamlessly extend the existing SeAT interface
+                        <li><strong>SeAT Integration</strong> – Designed to seamlessly extend the existing SeAT interface
                             and permission system.</li>
                     </ul>
 
@@ -121,7 +121,7 @@
                         </div>
                         <div class="card-body">
                             <div class="media">
-                                <img class="mr-3" src="//images.evetech.net/corporations/98791817/logo?size=128"
+                                <img class="mr-3" style="border-radius:50%;" src="//images.evetech.net/corporations/98791817/logo?size=128"
                                     alt="Nyxforge Dynamics" width="64" height="64">
                                 <div class="media-body">
                                     <p class="text-justify">
