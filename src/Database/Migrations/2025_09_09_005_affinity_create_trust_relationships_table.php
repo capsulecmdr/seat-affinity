@@ -21,7 +21,7 @@ return new class extends Migration {
             $table->timestamps();
 
             // each entity can have at most one record per classification
-            $table->unique(['affinity_entity_id', 'affinity_trust_classification_id'], 'entity_classification_unique');
+            $table->unique(['affinity_entity_id', 'affinity_trust_class_id'], 'entity_classification_unique');
         });
     }
 
