@@ -28,7 +28,7 @@ class SyncEntities extends Command
      */
     protected const SOURCES = [
         'alliance' => [
-            'model' => \Seat\Eveapi\Models\Alliance\Alliance::class,
+            'model' => \Seat\Eveapi\Models\Alliances\Alliance::class,
             'id'    => 'alliance_id',
             'name'  => 'name',
         ],
