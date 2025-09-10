@@ -268,7 +268,7 @@ class ShowEntityContacts extends Command
         if (empty($missing)) return;
 
         // Adjust table/model if your app uses a model class
-        $rows = DB::table('affinity_trust_classifications')
+        $rows = DB::table('affinity_trust_classification')
             ->whereIn('title', $missing)
             ->select(['id','title'])
             ->get();
