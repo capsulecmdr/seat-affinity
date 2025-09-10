@@ -115,7 +115,7 @@ class ShowEntityContacts extends Command
 
             // 4c) For each contact: ensure entity, then upsert trust relationship
             foreach ($enriched as $c) {
-                $contactType = $c['entity_type'] ?? null;
+                $contactType = $c['type'] ?? null;
                 $contactId   = $c['contact_id'];
                 $contactName = $c['name'] ?? null;
 
