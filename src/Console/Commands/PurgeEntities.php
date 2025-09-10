@@ -31,7 +31,7 @@ class PurgeEntities extends Command
             }
         }
 
-        DB::table('entities')->truncate();
+        DB::table('affinity_entity')->truncate();
 
         $this->info('All records in the entities table have been deleted.');
 
