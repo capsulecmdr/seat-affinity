@@ -109,7 +109,7 @@ class ShowEntityContacts extends Command
             $this->primeClassificationIds(['Trusted','Verified','Unverified','Untrusted','Flagged']);
 
             foreach ($enriched as $c) {
-                $contactType = $c['type'] ?? null;
+                $contactType = $c['contact_type'] ?? null;
                 $contactId   = $c['contact_id'];
                 $contactName = $c['name'] ?? null;
 
