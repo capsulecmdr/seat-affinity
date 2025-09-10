@@ -13,6 +13,6 @@ class AffinityTrustClassification extends Model
 
     public function relationships(): HasMany
     {
-        return $this->hasMany(AffinityTrustRelationship::class, 'affinity_trust_classification_id');
+        return $this->hasMany(AffinityTrustRelationship::class, 'affinity_trust_class_id');
     }
 }
