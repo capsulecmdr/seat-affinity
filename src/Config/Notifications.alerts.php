@@ -17,4 +17,28 @@ return [
             'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\ExampleAlert::class,
         ],
     ],
+    'affinity.alert_contact' => [
+        'label' => 'affinity::notifications.contact_alert',
+        'handlers' => [
+            'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\ContactAlert::class,
+        ],
+    ],
+    'affinity.alert_contract' => [
+        'label' => 'affinity::notifications.contract_alert',
+        'handlers' => [
+            'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\ContractHistoryAlert::class,
+        ],
+    ],
+    'affinity.alert_corporation' => [
+        'label' => 'affinity::notifications.corporation_alert',
+        'handlers' => [
+            'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\CorporationHistoryAlert::class,
+        ],
+    ],
+    'affinity.alert_mail' => [
+        'label' => 'affinity::notifications.mail_alert',
+        'handlers' => [
+            'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\MailHistoryAlert::class,
+        ],
+    ],
 ];
