@@ -7,6 +7,7 @@
             "CapsuleCmdr\\Affinity\\": "src/"
         },
         "files":[
+            "src/Support/helpers.php"
         ]
     },
     "authors": [

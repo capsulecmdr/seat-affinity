@@ -73,6 +73,11 @@ class AffinityServiceProvider extends AbstractSeatPlugin
 
         //register permissions
         $this->registerPermissions(__DIR__ . '/Config/Permissions/Permissions.php','affinity');
+
+        //register settings helper
+        $this->app->singleton('affinity.settings', function () {
+            return new \CapsuleCmdr\Affinity\Support\AffinitySettings();
+        });
     }
 
     private function addMigrations()
