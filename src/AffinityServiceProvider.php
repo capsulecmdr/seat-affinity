@@ -80,7 +80,9 @@ class AffinityServiceProvider extends AbstractSeatPlugin
         });
 
         //register commands
-        $this->loadCommandsFrom(__DIR__ . '/Console/Commands');
+        $this->commands([
+            \CapsuleCmdr\Affinity\Console\Commands\PurgeEntities::class,
+        ]);
     }
 
     private function addMigrations()
