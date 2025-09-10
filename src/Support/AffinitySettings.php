@@ -2,7 +2,7 @@
 
 namespace CapsuleCmdr\Affinity\Support;
 
-use CapsuleCmdr\Affinity\Models\AffinitySetting;
+use CapsuleCmdr\Affinity\Database\Models\AffinitySetting;
 use Illuminate\Support\Facades\Cache;
 
 class AffinitySettings
