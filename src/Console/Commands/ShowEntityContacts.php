@@ -230,7 +230,7 @@ class ShowEntityContacts extends Command
 
         return $contacts->map(function ($c) use ($names, $types) {
             $c['name']        = $names[$c['contact_id']] ?? null;
-            $c['entity_type'] = $types[$c['contact_id']] ?? null;
+            $c['type'] = $types[$c['contact_id']] ?? null;
             return $c;
         });
     }
@@ -294,8 +294,8 @@ class ShowEntityContacts extends Command
     {
         // Try fast path: is there already one?
         $existing = DB::table('affinity_entity')
-            ->where('entity_type', $entityType)
-            ->where('entity_id', $entityId)
+            ->where('type', $entityType)
+            ->where('eve_id', $entityId)
             ->select('id')
             ->first();
 
@@ -305,8 +305,8 @@ class ShowEntityContacts extends Command
 
         // Upsert-like behavior with duplicate-key ignore
         DB::table('affinity_entity')->insert([
-            'entity_type' => $entityType,
-            'entity_id'   => $entityId,
+            'type' => $entityType,
+            'eve_id'   => $entityId,
             'name'        => $name,
             'created_at'  => $now,
             'updated_at'  => $now,
@@ -314,8 +314,8 @@ class ShowEntityContacts extends Command
 
         // Re-fetch id (covers race)
         $row = DB::table('affinity_entity')
-            ->where('entity_type', $entityType)
-            ->where('entity_id', $entityId)
+            ->where('type', $entityType)
+            ->where('eve_id', $entityId)
             ->select('id')
             ->first();
 
