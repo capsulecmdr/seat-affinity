@@ -113,8 +113,10 @@ class ShowEntityContacts extends Command
                 $contactId   = $c['contact_id'];
                 $contactName = $c['name'] ?? null;
 
+                $dbug = implode("-",$c);
+
                 if (! $contactType) {
-                    $this->warn("  - Skipping contact {$contactId} (unknown type; not in Character/Corp/Alliance tables)");
+                    $this->warn("  - Skipping contact {$contactId} (unknown type; not in Character/Corp/Alliance tables) ({$dbug})");
                     continue;
                 }
 
