@@ -126,8 +126,8 @@ class SyncEntities extends Command
                 }
 
                 $payload[] = [
-                    'entity_type' => $type,
-                    'entity_id'   => $id,
+                    'type' => $type,
+                    'eve_id'   => $id,
                     'name'        => $row->{$nameCol},
                     'created_at'  => $now,
                     'updated_at'  => $now,
@@ -160,8 +160,8 @@ class SyncEntities extends Command
             foreach (array_slice($rows, 0, min(5, count($rows))) as $r) {
                 $this->line(sprintf(
                     "- [DRY] %s %d \"%s\"",
-                    $r['entity_type'],
-                    $r['entity_id'],
+                    $r['type'],
+                    $r['eve_id'],
                     $r['name'] ?? ''
                 ));
             }
@@ -173,7 +173,7 @@ class SyncEntities extends Command
 
         DB::table('affinity_entity')->upsert(
             $rows,
-            ['entity_type', 'entity_id'],
+            ['type', 'eve_id'],
             ['name', 'updated_at']
         );
 
