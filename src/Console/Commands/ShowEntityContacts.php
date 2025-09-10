@@ -137,11 +137,11 @@ class ShowEntityContacts extends Command
                 if (! $rel) {
                     AffinityTrustRelationship::create([
                         'affinity_entity_id'             => $entity->id,
-                        'affinity_trust_classification_id' => $classificationId,
+                        'affinity_trust_class_id' => $classificationId,
                     ]);
                     $this->line("  + Set {$contactType} {$contactId} → '{$classificationTitle}'");
                 } elseif ((int) $rel->affinity_trust_classification_id !== (int) $classificationId) {
-                    $rel->update(['affinity_trust_classification_id' => $classificationId]);
+                    $rel->update(['affinity_trust_class_id' => $classificationId]);
                     $this->line("  ~ Updated {$contactType} {$contactId} → '{$classificationTitle}'");
                 } // else already correct; no output
             }
