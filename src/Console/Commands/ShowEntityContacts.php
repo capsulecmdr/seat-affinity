@@ -88,7 +88,7 @@ class ShowEntityContacts extends Command
                 $row = [
                     $i + 1,
                     $c['contact_id'],
-                    $c['contact_type'] ?? null,
+                    $c['type'] ?? null,
                     $c['name'] ?? null,
                     $c['standing'],
                 ];
