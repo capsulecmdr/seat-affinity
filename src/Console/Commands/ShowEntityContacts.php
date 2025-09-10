@@ -5,6 +5,9 @@ namespace CapsuleCmdr\Affinity\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use CapsuleCmdr\Affinity\Models\AffinityEntity;
+use CapsuleCmdr\Affinity\Models\AffinityTrustClassification;
+use CapsuleCmdr\Affinity\Models\AffinityTrustRelationship;
 
 class ShowEntityContacts extends Command
 {
@@ -13,9 +16,9 @@ class ShowEntityContacts extends Command
         {name : Name to search}
         {--exact : Exact match on name}
         {--limit=200 : Max contacts to display}
-        {--sync : Create/update affinity_entity rows and trust relationships based on standings}';
+        {--sync : Create/update affinity_entity and trust relationship (classification) for each contact}';
 
-    protected $description = 'Resolve an entity by type+name and list its EVE contacts. With --sync, mirrors into Affinity entities and trust relationships.';
+    protected $description = 'Resolve an entity by type+name and list its EVE contacts. With --sync, ensures each contact has an Affinity entity and an up-to-date trust classification.';
 
     /** Cache for classification title -> id */
     protected array $classificationIds = [];
@@ -29,12 +32,8 @@ class ShowEntityContacts extends Command
         $doSync = (bool) $this->option('sync');
 
         $meta = $this->entityMeta($type);
-        if (! $meta) {
-            $this->error("Unsupported type '{$type}'. Use: character|corporation|alliance");
-            return self::INVALID;
-        }
-        if (! class_exists($meta['model'])) {
-            $this->error("Model not found for {$type}: {$meta['model']}");
+        if (! $meta || ! class_exists($meta['model'])) {
+            $this->error("Unsupported or missing model for type '{$type}'.");
             return self::INVALID;
         }
 
@@ -52,22 +51,23 @@ class ShowEntityContacts extends Command
         $ownerName = (string) $row->{$meta['name']};
         $this->info("Resolved {$type}: {$ownerName} [{$ownerId}]");
 
-        // 2) Load contacts
+        // 2) Load contacts from SeAT
         $contactModel = $this->contactModel($type);
         if (! class_exists($contactModel)) {
             $this->warn("Contact model not available for {$type}: {$contactModel}");
             return self::SUCCESS;
         }
 
-        $contacts = $contactModel::query()
-            ->where($meta['id'], $ownerId) // owner column: character_id / corporation_id / alliance_id
-            ->select(['contact_id', 'standing']) // known-safe columns
-            ->orderBy('contact_id')
-            ->limit($limit)
-            ->get()
+        $contactsQuery = $contactModel::query()
+            ->where($meta['id'], $ownerId)
+            ->select(['contact_id', 'standing'])
+            ->orderBy('contact_id');
+
+        // If syncing, fetch ALL to keep Affinity in sync; otherwise only what we show
+        $contacts = ($doSync ? $contactsQuery->get() : $contactsQuery->limit($limit)->get())
             ->map(fn ($r) => [
                 'contact_id' => (int) $r->contact_id,
-                'standing'   => $r->standing, // float
+                'standing'   => $r->standing,
             ]);
 
         if ($contacts->isEmpty()) {
@@ -75,17 +75,20 @@ class ShowEntityContacts extends Command
             return self::SUCCESS;
         }
 
-        // 3) Enrich names + detect type of each contact (needed for syncing)
+        // 3) Enrich with name + resolved type
         $enriched = $this->attachTypesAndNames($contacts);
 
-        // Show table output regardless
+        // 4) Print table (limit applies to display only)
+        $headings = ['#', 'contact_id', 'type', 'name', 'standing'];
+        if ($doSync) $headings[] = 'classification';
+
         $this->table(
-            ['#', 'contact_id', 'type', 'name', 'standing', $doSync ? 'classification' : null],
-            $enriched->values()->map(function ($c, $i) use ($doSync) {
+            $headings,
+            $enriched->take($limit)->values()->map(function ($c, $i) use ($doSync) {
                 $row = [
                     $i + 1,
                     $c['contact_id'],
-                    $c['entity_type'] ?? null,
+                    $c['type'] ?? null,
                     $c['name'] ?? null,
                     $c['standing'],
                 ];
@@ -96,46 +99,51 @@ class ShowEntityContacts extends Command
             })->all()
         );
 
-        if (! $doSync) {
-            return self::SUCCESS;
-        }
+        if (! $doSync) return self::SUCCESS;
 
-        // 4) SYNC: mirror owner + contacts into affinity tables with trust classification from standing
-        $this->info('Syncing into affinity_entity and affinity_trust_relationships…');
+        // 5) SYNC: for each contact, ensure AffinityEntity exists and its single trust classification matches standing
+        $this->info('Syncing affinity_entity + affinity_trust_relationship (classification per contact entity)…');
 
-        DB::transaction(function () use ($type, $ownerId, $ownerName, $enriched) {
+        DB::transaction(function () use ($enriched) {
+            // Preload classification ids from YOUR table name
+            $this->primeClassificationIds(['Trusted','Verified','Unverified','Untrusted','Flagged']);
 
-            // 4a) Ensure owner has an affinity_entity
-            $ownerAffinityId = $this->getOrCreateAffinityEntityId($type, $ownerId, $ownerName);
-
-            // 4b) Preload classification ids
-            $this->primeClassificationIds([
-                'Trusted', 'Verified', 'Unverified', 'Untrusted', 'Flagged',
-            ]);
-
-            // 4c) For each contact: ensure entity, then upsert trust relationship
             foreach ($enriched as $c) {
                 $contactType = $c['type'] ?? null;
                 $contactId   = $c['contact_id'];
                 $contactName = $c['name'] ?? null;
 
                 if (! $contactType) {
-                    // Couldn’t resolve type from SeAT models; skip safely.
-                    $this->warn("  - Skipping contact {$contactId} (unknown type; not found in Character/Corp/Alliance tables)");
+                    $this->warn("  - Skipping contact {$contactId} (unknown type; not in Character/Corp/Alliance tables)");
                     continue;
                 }
 
                 $classificationTitle = $this->classificationTitleForStanding($c['standing']);
                 $classificationId    = $this->classificationIdByTitle($classificationTitle);
                 if (! $classificationId) {
-                    $this->warn("  - Skipping contact {$contactId} ({$contactType}): classification '{$classificationTitle}' not found");
+                    $this->warn("  - Skipping contact {$contactId}: classification '{$classificationTitle}' not found");
                     continue;
                 }
 
-                $targetAffinityId = $this->getOrCreateAffinityEntityId($contactType, $contactId, $contactName);
+                // Ensure an AffinityEntity exists for the contact (uses your columns: type/eve_id/name)
+                $entity = AffinityEntity::firstOrCreate(
+                    ['type' => $contactType, 'eve_id' => $contactId],
+                    ['name' => $contactName]
+                );
 
-                // Upsert relationship owner -> contact
-                $this->upsertTrustRelationship($ownerAffinityId, $targetAffinityId, (int) $classificationId);
+                // Upsert the single trust relationship row for that entity
+                $rel = AffinityTrustRelationship::where('affinity_entity_id', $entity->id)->first();
+
+                if (! $rel) {
+                    AffinityTrustRelationship::create([
+                        'affinity_entity_id'             => $entity->id,
+                        'affinity_trust_classification_id' => $classificationId,
+                    ]);
+                    $this->line("  + Set {$contactType} {$contactId} → '{$classificationTitle}'");
+                } elseif ((int) $rel->affinity_trust_classification_id !== (int) $classificationId) {
+                    $rel->update(['affinity_trust_classification_id' => $classificationId]);
+                    $this->line("  ~ Updated {$contactType} {$contactId} → '{$classificationTitle}'");
+                } // else already correct; no output
             }
         });
 
@@ -144,7 +152,7 @@ class ShowEntityContacts extends Command
     }
 
     /**
-     * Map CLI entity type to SeAT owner model and id/name columns.
+     * Map CLI entity type to SeAT model and id/name columns.
      */
     protected function entityMeta(string $type): ?array
     {
@@ -169,7 +177,7 @@ class ShowEntityContacts extends Command
     }
 
     /**
-     * Contact models (Contacts namespace).
+     * Contact models (Contacts namespace you specified).
      */
     protected function contactModel(string $type): string
     {
@@ -182,55 +190,52 @@ class ShowEntityContacts extends Command
     }
 
     /**
-     * Resolve contact names AND deduce entity_type by probing SeAT info tables.
-     * Adds keys: entity_type (character|corporation|alliance), name
+     * Resolve contact names AND deduce entity type by probing SeAT info tables.
+     * Adds keys: type (character|corporation|alliance), name
      */
     protected function attachTypesAndNames(Collection $contacts): Collection
     {
         $ids = $contacts->pluck('contact_id')->unique()->values()->all();
 
-        $names  = [];
-        $types  = []; // id -> type
+        $names = [];
+        $types = [];
 
-        // Characters
         if (class_exists(\Seat\Eveapi\Models\Character\CharacterInfo::class)) {
-            $rows = \Seat\Eveapi\Models\Character\CharacterInfo::query()
+            \Seat\Eveapi\Models\Character\CharacterInfo::query()
                 ->whereIn('character_id', $ids)
                 ->select(['character_id as id', 'name'])
-                ->get();
-            foreach ($rows as $r) {
-                $names[$r->id] = $r->name;
-                $types[$r->id] = 'character';
-            }
+                ->get()
+                ->each(function ($r) use (&$names, &$types) {
+                    $names[$r->id] = $r->name;
+                    $types[$r->id] = 'character';
+                });
         }
 
-        // Corporations
         if (class_exists(\Seat\Eveapi\Models\Corporation\CorporationInfo::class)) {
-            $rows = \Seat\Eveapi\Models\Corporation\CorporationInfo::query()
+            \Seat\Eveapi\Models\Corporation\CorporationInfo::query()
                 ->whereIn('corporation_id', $ids)
                 ->select(['corporation_id as id', 'name'])
-                ->get();
-            foreach ($rows as $r) {
-                $names[$r->id] = $r->name;
-                $types[$r->id] = 'corporation';
-            }
+                ->get()
+                ->each(function ($r) use (&$names, &$types) {
+                    $names[$r->id] = $r->name;
+                    $types[$r->id] = 'corporation';
+                });
         }
 
-        // Alliances
         if (class_exists(\Seat\Eveapi\Models\Alliances\Alliance::class)) {
-            $rows = \Seat\Eveapi\Models\Alliances\Alliance::query()
+            \Seat\Eveapi\Models\Alliances\Alliance::query()
                 ->whereIn('alliance_id', $ids)
                 ->select(['alliance_id as id', 'name'])
-                ->get();
-            foreach ($rows as $r) {
-                $names[$r->id] = $r->name;
-                $types[$r->id] = 'alliance';
-            }
+                ->get()
+                ->each(function ($r) use (&$names, &$types) {
+                    $names[$r->id] = $r->name;
+                    $types[$r->id] = 'alliance';
+                });
         }
 
         return $contacts->map(function ($c) use ($names, $types) {
-            $c['name']        = $names[$c['contact_id']] ?? null;
-            $c['type'] = $types[$c['contact_id']] ?? null;
+            $c['name'] = $names[$c['contact_id']] ?? null;
+            $c['type'] = $types[$c['contact_id']] ?? null; // <- consistent key
             return $c;
         });
     }
@@ -240,35 +245,23 @@ class ShowEntityContacts extends Command
      */
     protected function classificationTitleForStanding(?float $standing): string
     {
-        if ($standing === null) {
-            return 'Unverified';
-        }
-        if ($standing >= 5.1 && $standing <= 10.0) {
-            return 'Trusted';
-        }
-        if ($standing >= 0.1 && $standing <= 5.0) {
-            return 'Verified';
-        }
-        if ($standing == 0.0) {
-            return 'Unverified';
-        }
-        if ($standing >= -5.0 && $standing <= -0.1) {
-            return 'Untrusted';
-        }
-        // -10 to -5.1
-        return 'Flagged';
+        if ($standing === null) return 'Unverified';
+        if ($standing >= 5.1 && $standing <= 10.0) return 'Trusted';
+        if ($standing >= 0.1 && $standing <= 5.0)  return 'Verified';
+        if ($standing == 0.0)                      return 'Unverified';
+        if ($standing >= -5.0 && $standing <= -0.1) return 'Untrusted';
+        return 'Flagged'; // -10 to -5.1
     }
 
     /**
-     * Ensure classification IDs are cached.
+     * Load classification IDs from your table (affinity_trust_classification).
      */
     protected function primeClassificationIds(array $titles): void
     {
         $missing = array_diff($titles, array_keys($this->classificationIds));
         if (empty($missing)) return;
 
-        // Adjust table/model if your app uses a model class
-        $rows = DB::table('affinity_trust_classification')
+        $rows = AffinityTrustClassification::query()
             ->whereIn('title', $missing)
             ->select(['id','title'])
             ->get();
@@ -284,80 +277,5 @@ class ShowEntityContacts extends Command
             $this->primeClassificationIds([$title]);
         }
         return $this->classificationIds[$title] ?? null;
-    }
-
-    /**
-     * Get or create an affinity_entity row and return its PK id.
-     * Assumes unique constraint on (entity_type, entity_id).
-     */
-    protected function getOrCreateAffinityEntityId(string $entityType, int $entityId, ?string $name): int
-    {
-        // Try fast path: is there already one?
-        $existing = DB::table('affinity_entity')
-            ->where('type', $entityType)
-            ->where('eve_id', $entityId)
-            ->select('id')
-            ->first();
-
-        if ($existing) return (int) $existing->id;
-
-        $now = now('UTC')->toDateTimeString();
-
-        // Upsert-like behavior with duplicate-key ignore
-        DB::table('affinity_entity')->insert([
-            'type' => $entityType,
-            'eve_id'   => $entityId,
-            'name'        => $name,
-            'created_at'  => $now,
-            'updated_at'  => $now,
-        ]);
-
-        // Re-fetch id (covers race)
-        $row = DB::table('affinity_entity')
-            ->where('type', $entityType)
-            ->where('eve_id', $entityId)
-            ->select('id')
-            ->first();
-
-        return (int) $row->id;
-    }
-
-    /**
-     * Upsert trust relationship owner -> contact with new classification.
-     * Adjust table/column names here if your schema differs.
-     */
-    protected function upsertTrustRelationship(int $sourceId, int $targetId, int $classificationId): void
-    {
-        $now = now('UTC')->toDateTimeString();
-
-        $existing = DB::table('affinity_trust_relationship')
-            ->where('source_entity_id', $sourceId)
-            ->where('target_entity_id', $targetId)
-            ->first();
-
-        if (! $existing) {
-            DB::table('affinity_trust_relationship')->insert([
-                'source_entity_id' => $sourceId,
-                'target_entity_id' => $targetId,
-                'classification_id'=> $classificationId,
-                'created_at'       => $now,
-                'updated_at'       => $now,
-            ]);
-            $this->line("  + Added relationship {$sourceId} -> {$targetId} ({$classificationId})");
-            return;
-        }
-
-        if ((int) $existing->classification_id !== $classificationId) {
-            DB::table('affinity_trust_relationship')
-                ->where('id', $existing->id)
-                ->update([
-                    'classification_id' => $classificationId,
-                    'updated_at'        => $now,
-                ]);
-            $this->line("  ~ Updated relationship {$sourceId} -> {$targetId} to classification {$classificationId}");
-        } else {
-            // No change needed
-            // $this->line("  = Relationship {$sourceId} -> {$targetId} already up-to-date");
-        }
     }
 }
