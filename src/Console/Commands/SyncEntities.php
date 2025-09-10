@@ -101,7 +101,7 @@ class SyncEntities extends Command
 
         // Pull already present ids for this type to avoid dup work.
         $existing = DB::table('affinity_entity')
-            ->where('entity_type', $type)
+            ->where('type', $type)
             ->pluck('eve_id')
             ->flip(); // value->key map for O(1) checks
 
