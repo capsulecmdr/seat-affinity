@@ -11,7 +11,7 @@ class AffinityTrustRelationship extends Model
 
     protected $fillable = [
         'affinity_entity_id',
-        'affinity_trust_classification_id',
+        'affinity_trust_class_id',
     ];
 
     public function entity(): BelongsTo
@@ -21,6 +21,6 @@ class AffinityTrustRelationship extends Model
 
     public function classification(): BelongsTo
     {
-        return $this->belongsTo(AffinityTrustClassification::class, 'affinity_trust_classification_id');
+        return $this->belongsTo(AffinityTrustClassification::class, 'affinity_trust_class_id');
     }
 }
