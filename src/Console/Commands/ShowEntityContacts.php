@@ -330,13 +330,13 @@ class ShowEntityContacts extends Command
     {
         $now = now('UTC')->toDateTimeString();
 
-        $existing = DB::table('affinity_trust_relationships')
+        $existing = DB::table('affinity_trust_relationship')
             ->where('source_entity_id', $sourceId)
             ->where('target_entity_id', $targetId)
             ->first();
 
         if (! $existing) {
-            DB::table('affinity_trust_relationships')->insert([
+            DB::table('affinity_trust_relationship')->insert([
                 'source_entity_id' => $sourceId,
                 'target_entity_id' => $targetId,
                 'classification_id'=> $classificationId,
@@ -348,7 +348,7 @@ class ShowEntityContacts extends Command
         }
 
         if ((int) $existing->classification_id !== $classificationId) {
-            DB::table('affinity_trust_relationships')
+            DB::table('affinity_trust_relationship')
                 ->where('id', $existing->id)
                 ->update([
                     'classification_id' => $classificationId,
