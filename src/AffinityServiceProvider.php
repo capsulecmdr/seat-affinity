@@ -83,6 +83,7 @@ class AffinityServiceProvider extends AbstractSeatPlugin
         $this->commands([
             \CapsuleCmdr\Affinity\Console\Commands\PurgeEntities::class,
             \CapsuleCmdr\Affinity\Console\Commands\SyncEntities::class,
+            \CapsuleCmdr\Affinity\Console\Commands\ShowEntityContacts::class,
         ]);
     }
 
