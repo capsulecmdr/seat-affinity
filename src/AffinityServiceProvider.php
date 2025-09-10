@@ -85,6 +85,7 @@ class AffinityServiceProvider extends AbstractSeatPlugin
             \CapsuleCmdr\Affinity\Console\Commands\PurgeTrustRelationships::class,
             \CapsuleCmdr\Affinity\Console\Commands\SyncEntities::class,
             \CapsuleCmdr\Affinity\Console\Commands\ShowEntityContacts::class,
+            \CapsuleCmdr\Affinity\Console\Commands\HydrateContactEntities::class,
         ]);
     }
 
