@@ -78,6 +78,9 @@ class AffinityServiceProvider extends AbstractSeatPlugin
         $this->app->singleton('affinity.settings', function () {
             return new \CapsuleCmdr\Affinity\Support\AffinitySettings();
         });
+
+        //register commands
+        $this->loadCommandsFrom(__DIR__ . '/Console/Commands');
     }
 
     private function addMigrations()
