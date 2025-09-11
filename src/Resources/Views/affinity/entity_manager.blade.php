@@ -131,13 +131,13 @@
                 @php
                     switch(strtolower($e->type)){
                         case "alliance":
-                            $e->avatar_url = "https://images.evetech.net/alliances/". $e->id ."/logo?size=128";
+                            $e->avatar_url = "https://images.evetech.net/alliances/". $e->eve_id ."/logo?size=128";
                         break;
                         case "corporation":
-                            $e->avatar_url = "https://images.evetech.net/corporations/". $e->id ."/logo?size=128";
+                            $e->avatar_url = "https://images.evetech.net/corporations/". $e->eve_id ."/logo?size=128";
                         break;
                         case "character":
-                            $e->avatar_url = "https://images.evetech.net/characters/". $e->id ."/portrait?size=128";
+                            $e->avatar_url = "https://images.evetech.net/characters/". $e->eve_id ."/portrait?size=128";
                         break;
                         default: '';
 
