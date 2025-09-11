@@ -26,17 +26,17 @@
 
             <h6 class="mb-2">Trust Levels</h6>
             <ul class="list-unstyled small mb-3">
-              <li><span class="badge badge-light">1</span> Trusted</li>
-              <li><span class="badge badge-light">2</span> Verified</li>
-              <li><span class="badge badge-light">3</span> Unverified</li>
-              <li><span class="badge badge-light">4</span> Untrusted</li>
-              <li><span class="badge badge-light">5</span> Flagged</li>
+              <li><span class="badge badge-light">1</span> Trusted (will alert on everything)</li>
+              <li><span class="badge badge-light">2</span> Verified (will alert on ≥ Verifiedw)</li>
+              <li><span class="badge badge-light">3</span> Unverified(will alert on ≥ Unverfied)</li>
+              <li><span class="badge badge-light">4</span> Untrusted(will alert on ≥ Untrusted)</li>
+              <li><span class="badge badge-light">5</span> Flagged(will alert only on Flagged)</li>
             </ul>
 
             <h6 class="mb-2">Corp Change Modes</h6>
             <ul class="list-unstyled small mb-0">
               <li><span class="badge badge-light">1</span> Alerts Off</li>
-              <li><span class="badge badge-light">2</span> Alert on all</li>
+              <li><span class="badge badge-light">2</span> Alert on All</li>
               <li><span class="badge badge-light">3</span> Alert on ≥ Verified</li>
               <li><span class="badge badge-light">4</span> Alert on ≥ Unverified</li>
               <li><span class="badge badge-light">5</span> Alert on ≥ Untrusted</li>
@@ -63,12 +63,18 @@
 
             <div class="col-md-6">
               <div class="card mb-3 h-100">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                  <strong>{{ $meta['label'] }}</strong>
-                  <span class="badge badge-primary">
-                    <span id="{{ $id }}_num">{{ $val }}</span>
-                    <span id="{{ $id }}_label" class="ml-1"></span>
-                  </span>
+                <div class="card-header">
+                  <div class="d-flex align-items-center justify-content-between">
+                    <strong>{{ $meta['label'] }}</strong>
+                    <span class="badge badge-primary">
+                      <span id="{{ $id }}_num">{{ $val }}</span>
+                      <span id="{{ $id }}_label" class="ml-1"></span>
+                    </span>
+                  </div>
+                  {{-- NEW: small muted description --}}
+                  @if (!empty($meta['description']))
+                    <div class="small text-muted mt-1">{{ $meta['description'] }}</div>
+                  @endif
                 </div>
                 <div class="card-body">
                   {{-- Hidden default guarantees a value is always sent --}}
