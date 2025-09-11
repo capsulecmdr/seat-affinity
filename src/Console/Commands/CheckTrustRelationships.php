@@ -5,7 +5,7 @@ namespace CapsuleCmdr\Affinity\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Seat\Eveapi\Models\Character\CharacterInfo;
-use Seat\Eveapi\Models\Character\CharacterContact;
+use Seat\Eveapi\Models\Contacts\CharacterContact;
 use Seat\Web\Models\User;
 use CapsuleCmdr\Affinity\Models\AffinityTrustRelationship;
 
