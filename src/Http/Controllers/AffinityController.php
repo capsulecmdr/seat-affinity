@@ -56,6 +56,7 @@ class AffinityController extends Controller
                 'value'   => (int) ($stored[$key]->value ?? $default),
                 'help'    => $help,
                 'map'     => $defs[$key][5] ?? null,
+                'description' => $defs[$key][6] ?? null,
             ];
         }
 
