@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use CapsuleCmdr\Affinity\Models\AffinitySetting;
 use CapsuleCmdr\Affinity\Models\AffinityEntity;
+use Illuminate\Support\Facades\DB;
 
 
 class AffinityController extends Controller
