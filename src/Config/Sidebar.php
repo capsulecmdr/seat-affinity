@@ -22,7 +22,7 @@ return [
             [
                 "name"=>"Entity Manager",
                 "icon"=>"fas fa-id-card",
-                "route"=>"affinity.test",
+                "route"=>"affinity.entities.index",
                 "permission"=>"affinity.admin",
             ],
             [

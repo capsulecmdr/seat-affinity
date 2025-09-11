@@ -12,6 +12,10 @@ Route::middleware(['web','auth'])
             return response('This is a dummy route, nothing here yet.', 200);
         })->name('test');
 
+        Route::get('/entities', [AffinityController::class, 'entityManager'])->name('entities.index');
+        Route::post('/entities/trust', [AffinityController::class, 'updateTrust'])->name('entities.updateTrust');
+
+
         Route::get('/settings', [AffinityController::class, 'settings'])->name('settings');
         Route::post('/settings', [AffinityController::class, 'updateSettings'])->name('settings.update');
         
