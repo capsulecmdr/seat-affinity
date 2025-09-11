@@ -48,7 +48,7 @@ class CheckTrustRelationships extends Command
 
                             Log::error($msg);
                             $this->error($msg);
-                        }else{
+                        }elseif($trust && $trust->affinity_trust_class_id >= 1){
                             $msg = sprintf(
                                 "User %d, Character %d, Contact %d has trust classification %d",
                                 $user->id,
