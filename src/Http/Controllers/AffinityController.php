@@ -126,7 +126,7 @@ class AffinityController extends Controller
         // Base SeAT URL (configurable)
         $seat_base = config('affinity.seat_base_url', 'https://anvil.capsulecmdr.com');
 
-        return view('affinity.entities.index', compact('entities', 'selected', 'seat_base'));
+        return view('affinity::affinity.entities.index', compact('entities', 'selected', 'seat_base'));
     }
 
     public function updateTrust(Request $request)
