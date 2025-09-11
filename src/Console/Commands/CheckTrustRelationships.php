@@ -13,6 +13,7 @@ use CapsuleCmdr\Affinity\Models\AffinityTrustRelationship;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Seat\Notifications\Models\NotificationGroup;
 use Seat\Notifications\Traits\NotificationDispatchTool;
+use Illuminate\Support\Facades\Notification;
 
 class CheckTrustRelationships extends Command
 {
