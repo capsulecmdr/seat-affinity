@@ -66,7 +66,7 @@
                 <div class="card-header">
                   <div class="d-flex align-items-center justify-content-between">
                     <strong>{{ $meta['label'] }}</strong>
-                    <span class="badge badge-primary">
+                    <span class="badge badge-light">
                       <span id="{{ $id }}_num">{{ $val }}</span>
                       <span id="{{ $id }}_label" class="ml-1"></span>
                     </span>
