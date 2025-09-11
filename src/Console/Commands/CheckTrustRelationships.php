@@ -42,6 +42,13 @@ class CheckTrustRelationships extends Command
                         
                         //if no entity exists skip *for now
                         if(!$affinityEntity){
+                            $msg = sprintf(
+                                "User %d, Character %d, Contact %d has no associated affinity entity",
+                                $user->id,
+                                $character->character_id,
+                                $contact->contact_id
+                            );
+                            $this->warn($msg);
                             continue;
                         }
 
