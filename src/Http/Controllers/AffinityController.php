@@ -4,6 +4,7 @@ namespace CapsuleCmdr\Affinity\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use CapsuleCmdr\Affinity\Models\AffinitySetting;
 
 
@@ -34,7 +35,7 @@ class AffinityController extends Controller
 
             // NOTE: You listed 1…3 but then described 1…6 behaviors.
             // Using 1…6 to match the behavior list.
-            'alert_corp_change'             => ['Corp Change Alert Mode', 1, 6, 3, '1=Off, 2=gte1, 3=gte2, 4=gte3, 5=gte4, 6=gte5', 'corp_change','Triggers alerts when a corporation change meet or exceed the selected trust level.'],
+            'alert_corp_change'             => ['Corp Change Alert Mode', 1, 6, 3, '1=Off, 2=gte1, 3=gte2, 4=gte3, 5=gte4, 6=gte5', 'corp_change','Triggers alerts when a corporation change meets or exceeds the selected trust level.'],
         ];
     }
 
