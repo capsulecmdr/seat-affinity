@@ -28,13 +28,13 @@ return [
             [
                 "name"=>"Settings",
                 "icon"=>"fas fa-tools",
-                "route"=>"affinity.test",
+                "route"=>"affinity.settiings",
                 "permission"=>"affinity.admin",
             ],
             [
                 "name"=>"About",
                 "icon"=>"fas fa-info",
-                "route"=>"affinity.test",
+                "route"=>"affinity.about",
                 "permission"=>"affinity.admin",
             ],
         ],

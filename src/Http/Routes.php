@@ -12,5 +12,10 @@ Route::middleware(['web','auth'])
             return response('This is a dummy route, nothing here yet.', 200);
         })->name('test');
 
+        Route::get('/settings', [AffinityController::class, 'settings'])->name('settings');
+        Route::post('/settings', [AffinityController::class, 'updateSettings'])->name('settings.update');
+        
         Route::get('/about',[AffinityController::class,'about'])->name('about');
+
+
     });
