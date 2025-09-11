@@ -6,6 +6,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use CapsuleCmdr\Affinity\Models\AffinitySetting;
+use CapsuleCmdr\Affinity\Models\AffinityEntity;
 
 
 class AffinityController extends Controller
