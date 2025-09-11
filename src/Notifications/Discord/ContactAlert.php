@@ -26,7 +26,7 @@ class ContactAlert extends AbstractDiscordNotification
                 $embed->author("Affinity Intel");
                 $embed->color(15548997);
                 $embed->title('Suspicious Contact Alert');
-                $embed->description($this->user . ' has an established ' . $this->contact_type . ' contact for ' . $this->contact_name . ' which exceeds alerting threshold.');                
+                $embed->description($this->user . ' has an established [' . $this->contact_type . '] contact for ' . $this->contact_name . ' which exceeds alerting threshold.');                
             })
 
             ->success();
