@@ -37,7 +37,14 @@ class CheckTrustRelationships extends Command
                     $contacts = CharacterContact::where('character_id', $character->character_id)->get();
 
                     foreach ($contacts as $contact) {
+                        //find the associated affinityentity
                         $affinityEntity = AffinityEntity::where('eve_id',$contact->contact_id)->first();
+                        
+                        //if no entity exists skip *for now
+                        if(!$affinityEntity){
+                            continue;
+                        }
+
                         $trust = AffinityTrustRelationship::where('affinity_entity_id', $affinityEntity->id)->first();
                         
                         //default to neut
