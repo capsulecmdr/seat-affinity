@@ -3,6 +3,16 @@
 
 @section('title', 'Affinity Entity Manager')
 
+@push('css')
+<style>
+  .btn-group .btn { margin-right: .25rem; }
+  .btn-group .btn:last-child { margin-right: 0; }
+  @media (max-width: 992px) {
+    .card-header .d-flex.gap-2 > div { margin-bottom: .25rem; }
+  }
+</style>
+@endpush
+
 @section('content')
 @php
   $trustMap = [
@@ -94,55 +104,58 @@
     {{-- RIGHT: Observed Entities --}}
     <div class="col-lg-8">
       <div class="card mb-3">
-        <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <strong>Observed Entities</strong>
+        <div class="card-header">
+            <div class="d-flex flex-wrap align-items-center gap-2">
 
-            <div class="d-flex align-items-center flex-wrap gap-3">
-                {{-- Type filters --}}
-                <div class="d-flex align-items-center gap-3">
-                <label class="mb-0 me-3">
-                    <input type="checkbox" class="me-1 type-filter" data-type="alliance" checked>
-                    Alliances
-                </label>
-                <label class="mb-0 me-3">
-                    <input type="checkbox" class="me-1 type-filter" data-type="corporation" checked>
-                    Corporations
-                </label>
-                <label class="mb-0 me-3">
-                    <input type="checkbox" class="me-1 type-filter" data-type="character" checked>
-                    Characters
-                </label>
+                {{-- Group: Type --}}
+                <div class="d-flex align-items-center me-3">
+                <span class="small text-muted me-2">Type:</span>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Type filters">
+                    <label class="btn btn-outline-secondary active">
+                    <input type="checkbox" class="d-none type-chip" data-type="alliance" checked>
+                    Alliance
+                    </label>
+                    <label class="btn btn-outline-secondary active">
+                    <input type="checkbox" class="d-none type-chip" data-type="corporation" checked>
+                    Corporation
+                    </label>
+                    <label class="btn btn-outline-secondary active">
+                    <input type="checkbox" class="d-none type-chip" data-type="character" checked>
+                    Character
+                    </label>
+                </div>
                 </div>
 
-                {{-- Trust filters --}}
-                <div class="d-flex align-items-center gap-2 ms-3">
-                <label class="mb-0 me-2 small text-muted">Trust:</label>
-                <label class="mb-0 me-2">
-                    <input type="checkbox" class="me-1 trust-filter" data-trust="1" checked>
-                    Trusted
-                </label>
-                <label class="mb-0 me-2">
-                    <input type="checkbox" class="me-1 trust-filter" data-trust="2" checked>
-                    Verified
-                </label>
-                <label class="mb-0 me-2">
-                    <input type="checkbox" class="me-1 trust-filter" data-trust="3" checked>
-                    Unverified
-                </label>
-                <label class="mb-0 me-2">
-                    <input type="checkbox" class="me-1 trust-filter" data-trust="4" checked>
-                    Untrusted
-                </label>
-                <label class="mb-0 me-2">
-                    <input type="checkbox" class="me-1 trust-filter" data-trust="5" checked>
-                    Flagged
-                </label>
+                {{-- Group: Trust --}}
+                <div class="d-flex align-items-center">
+                <span class="small text-muted me-2">Trust:</span>
+                <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Trust filters">
+                    <label class="btn btn-outline-primary active">
+                    <input type="checkbox" class="d-none trust-chip" data-trust="1" checked> Trusted
+                    </label>
+                    <label class="btn btn-outline-info active">
+                    <input type="checkbox" class="d-none trust-chip" data-trust="2" checked> Verified
+                    </label>
+                    <label class="btn btn-outline-secondary active">
+                    <input type="checkbox" class="d-none trust-chip" data-trust="3" checked> Unverified
+                    </label>
+                    <label class="btn btn-outline-warning active">
+                    <input type="checkbox" class="d-none trust-chip" data-trust="4" checked> Untrusted
+                    </label>
+                    <label class="btn btn-outline-danger active">
+                    <input type="checkbox" class="d-none trust-chip" data-trust="5" checked> Flagged
+                    </label>
+                </div>
                 </div>
 
+                {{-- Search on the far right --}}
+                <div class="ms-auto" style="min-width:220px;">
                 <input id="search-box" type="search" class="form-control form-control-sm"
-                    placeholder="search (min 3 chars)" style="width:220px;">
+                        placeholder="search (min 3 chars)">
+                </div>
             </div>
             </div>
+
 
 
         <div class="card-body p-0">
@@ -218,6 +231,7 @@
 @push('javascript')
 <script>
 (function(){
+  // Trust mapping (labels + Bootstrap classes)
   const trustMap = {
     1: {label:'Trusted',    class:'btn-primary'},
     2: {label:'Verified',   class:'btn-info'},
@@ -227,8 +241,11 @@
   };
 
   const rows        = Array.from(document.querySelectorAll('.entity-row'));
-  const chkType     = Array.from(document.querySelectorAll('.type-filter'));
-  const chkTrust    = Array.from(document.querySelectorAll('.trust-filter'));
+
+  // Chip selectors (instead of plain checkboxes)
+  const typeChips   = Array.from(document.querySelectorAll('.type-chip'));
+  const trustChips  = Array.from(document.querySelectorAll('.trust-chip'));
+
   const searchBox   = document.getElementById('search-box');
 
   const dId     = document.getElementById('d-id');
@@ -243,13 +260,15 @@
   const trustPill   = document.getElementById('trust-pill');
   const fEntityId   = document.getElementById('f-entity-id');
 
+  // Helpers to get active filters
   function activeTypes(){
-    return new Set(chkType.filter(c=>c.checked).map(c=>c.dataset.type));
+    return new Set(typeChips.filter(c => c.checked).map(c => c.dataset.type));
   }
   function activeTrusts(){
-    return new Set(chkTrust.filter(c=>c.checked).map(c=>parseInt(c.dataset.trust,10)));
+    return new Set(trustChips.filter(c => c.checked).map(c => parseInt(c.dataset.trust,10)));
   }
 
+  // Apply filters to table
   function applyFilters(){
     const enabledTypes  = activeTypes();
     const enabledTrusts = activeTrusts();
@@ -257,8 +276,8 @@
     const useSearch = q.length >= 3;
 
     rows.forEach(tr=>{
-      const type   = tr.dataset.type;                      // 'character' | 'corporation' | 'alliance'
-      const name   = tr.dataset.name;                      // lowercased
+      const type   = tr.dataset.type;
+      const name   = tr.dataset.name;
       const trust  = parseInt(tr.dataset.trustid || '3', 10);
 
       const typeOk   = enabledTypes.has(type);
@@ -269,10 +288,28 @@
     });
   }
 
-  chkType.forEach(c => c.addEventListener('change', applyFilters));
-  chkTrust.forEach(c => c.addEventListener('change', applyFilters));
+  // Toggle chip .active class in sync with checkbox state
+  function wireChipToggle(chipList){
+    chipList.forEach(input => {
+      const label = input.closest('label.btn');
+      label.addEventListener('click', () => {
+        setTimeout(() => {
+          if (input.checked) {
+            label.classList.add('active');
+          } else {
+            label.classList.remove('active');
+          }
+          applyFilters();
+        }, 0);
+      });
+    });
+  }
+  wireChipToggle(typeChips);
+  wireChipToggle(trustChips);
+
   searchBox.addEventListener('input', applyFilters);
 
+  // Selection helpers
   function clearRowSelections(){
     document.querySelectorAll('.row-picker').forEach(r => r.checked = false);
     rows.forEach(r => r.classList.remove('table-active'));
@@ -293,7 +330,7 @@
     // Bind details panel
     dId.textContent    = tr.dataset.id;
     dType.textContent  = tr.dataset.type;
-    dName.textContent  = tr.querySelector('td:nth-child(4)').textContent; // Name cell
+    dName.textContent  = tr.querySelector('td:nth-child(4)').textContent;
     dEveId.textContent = tr.dataset.eveid;
     dAvatar.src        = tr.dataset.avatar || 'https://images.evetech.net/characters/123/portrait?size=128';
     dSeat.classList.remove('disabled','text-muted');
@@ -318,7 +355,7 @@
     }
   });
 
-  // Update pill dynamically & auto-submit on change
+  // Trust range → pill + autosubmit
   trustRange?.addEventListener('input', ()=>{
     updateTrustPill(parseInt(trustRange.value,10));
   });
@@ -329,7 +366,7 @@
     }
   });
 
-  // Initial filter pass
+  // Initial run
   applyFilters();
 })();
 </script>
