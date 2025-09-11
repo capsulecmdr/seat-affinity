@@ -242,7 +242,7 @@
 
   const rows        = Array.from(document.querySelectorAll('.entity-row'));
 
-  // Chip selectors (instead of plain checkboxes)
+  // Chip selectors
   const typeChips   = Array.from(document.querySelectorAll('.type-chip'));
   const trustChips  = Array.from(document.querySelectorAll('.trust-chip'));
 
@@ -292,15 +292,21 @@
   function wireChipToggle(chipList){
     chipList.forEach(input => {
       const label = input.closest('label.btn');
-      label.addEventListener('click', () => {
-        setTimeout(() => {
-          if (input.checked) {
-            label.classList.add('active');
-          } else {
-            label.classList.remove('active');
-          }
-          applyFilters();
-        }, 0);
+
+      // Initialize label state
+      label.classList.toggle('active', !!input.checked);
+
+      // Explicit toggle on label click
+      label.addEventListener('click', (e) => {
+        e.preventDefault();
+        input.checked = !input.checked;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+      // Sync on input change
+      input.addEventListener('change', () => {
+        label.classList.toggle('active', !!input.checked);
+        applyFilters();
       });
     });
   }
@@ -371,5 +377,6 @@
 })();
 </script>
 @endpush
+
 
 @endsection
