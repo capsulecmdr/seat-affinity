@@ -95,23 +95,55 @@
     <div class="col-lg-8">
       <div class="card mb-3">
         <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-          <strong>Observed Entities</strong>
-          <div class="d-flex align-items-center gap-3">
-            <label class="mb-0 me-3">
-              <input type="checkbox" class="me-1 type-filter" data-type="alliance" checked>
-              Alliances
-            </label>
-            <label class="mb-0 me-3">
-              <input type="checkbox" class="me-1 type-filter" data-type="corporation" checked>
-              Corporations
-            </label>
-            <label class="mb-0 me-3">
-              <input type="checkbox" class="me-1 type-filter" data-type="character" checked>
-              Characters
-            </label>
-            <input id="search-box" type="search" class="form-control form-control-sm" placeholder="search (min 3 chars)" style="width:220px;">
-          </div>
-        </div>
+            <strong>Observed Entities</strong>
+
+            <div class="d-flex align-items-center flex-wrap gap-3">
+                {{-- Type filters --}}
+                <div class="d-flex align-items-center gap-3">
+                <label class="mb-0 me-3">
+                    <input type="checkbox" class="me-1 type-filter" data-type="alliance" checked>
+                    Alliances
+                </label>
+                <label class="mb-0 me-3">
+                    <input type="checkbox" class="me-1 type-filter" data-type="corporation" checked>
+                    Corporations
+                </label>
+                <label class="mb-0 me-3">
+                    <input type="checkbox" class="me-1 type-filter" data-type="character" checked>
+                    Characters
+                </label>
+                </div>
+
+                {{-- Trust filters --}}
+                <div class="d-flex align-items-center gap-2 ms-3">
+                <label class="mb-0 me-2 small text-muted">Trust:</label>
+                <label class="mb-0 me-2">
+                    <input type="checkbox" class="me-1 trust-filter" data-trust="1" checked>
+                    Trusted
+                </label>
+                <label class="mb-0 me-2">
+                    <input type="checkbox" class="me-1 trust-filter" data-trust="2" checked>
+                    Verified
+                </label>
+                <label class="mb-0 me-2">
+                    <input type="checkbox" class="me-1 trust-filter" data-trust="3" checked>
+                    Unverified
+                </label>
+                <label class="mb-0 me-2">
+                    <input type="checkbox" class="me-1 trust-filter" data-trust="4" checked>
+                    Untrusted
+                </label>
+                <label class="mb-0 me-2">
+                    <input type="checkbox" class="me-1 trust-filter" data-trust="5" checked>
+                    Flagged
+                </label>
+                </div>
+
+                <input id="search-box" type="search" class="form-control form-control-sm"
+                    placeholder="search (min 3 chars)" style="width:220px;">
+            </div>
+            </div>
+
 
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -143,6 +175,9 @@
                         default: '';
 
                     };
+
+                    $tid = (int) ($e->trust_id ?? 3);
+                    $t   = $trustMap[$tid] ?? $trustMap[3];
                 @endphp
                 <tr class="entity-row"
                     data-type="{{ strtolower($e->type) }}"
@@ -160,7 +195,9 @@
                   <td class="text-capitalize">{{ $e->type }}</td>
                   <td>{{ $e->name }}</td>
                   <td>{{ $e->eve_id }}</td>
-                  <td>{{ $e->trust_title ?? 'Unverified' }}</td>
+                  <td><span class="badge {{ str_replace('btn-', 'bg-', $t['class']) }}">
+                        {{ $t['label'] }}
+                    </span></td>
                   <td class="text-end">
                     <input type="radio" name="row-select" class="form-check-input row-picker">
                   </td>
@@ -181,11 +218,17 @@
 @push('javascript')
 <script>
 (function(){
-  const trustLabels = {1:'Trusted',2:'Verified',3:'Unverified',4:'Untrusted',5:'Flagged'};
+  const trustMap = {
+    1: {label:'Trusted',    class:'btn-primary'},
+    2: {label:'Verified',   class:'btn-info'},
+    3: {label:'Unverified', class:'btn-secondary'},
+    4: {label:'Untrusted',  class:'btn-warning'},
+    5: {label:'Flagged',    class:'btn-danger'}
+  };
 
-  const tableBody   = document.querySelector('#entities-table tbody');
   const rows        = Array.from(document.querySelectorAll('.entity-row'));
-  const chkFilters  = Array.from(document.querySelectorAll('.type-filter'));
+  const chkType     = Array.from(document.querySelectorAll('.type-filter'));
+  const chkTrust    = Array.from(document.querySelectorAll('.trust-filter'));
   const searchBox   = document.getElementById('search-box');
 
   const dId     = document.getElementById('d-id');
@@ -201,32 +244,44 @@
   const fEntityId   = document.getElementById('f-entity-id');
 
   function activeTypes(){
-    const enabled = new Set(
-      chkFilters.filter(c=>c.checked).map(c=>c.dataset.type)
-    );
-    return enabled;
+    return new Set(chkType.filter(c=>c.checked).map(c=>c.dataset.type));
+  }
+  function activeTrusts(){
+    return new Set(chkTrust.filter(c=>c.checked).map(c=>parseInt(c.dataset.trust,10)));
   }
 
   function applyFilters(){
-    const enabled = activeTypes();
+    const enabledTypes  = activeTypes();
+    const enabledTrusts = activeTrusts();
     const q = (searchBox.value || '').trim().toLowerCase();
     const useSearch = q.length >= 3;
 
     rows.forEach(tr=>{
-      const type = tr.dataset.type;
-      const name = tr.dataset.name;
-      const typeOk = enabled.has(type);
+      const type   = tr.dataset.type;                      // 'character' | 'corporation' | 'alliance'
+      const name   = tr.dataset.name;                      // lowercased
+      const trust  = parseInt(tr.dataset.trustid || '3', 10);
+
+      const typeOk   = enabledTypes.has(type);
+      const trustOk  = enabledTrusts.has(trust);
       const searchOk = !useSearch || name.includes(q);
-      tr.style.display = (typeOk && searchOk) ? '' : 'none';
+
+      tr.style.display = (typeOk && trustOk && searchOk) ? '' : 'none';
     });
   }
 
-  chkFilters.forEach(c => c.addEventListener('change', applyFilters));
+  chkType.forEach(c => c.addEventListener('change', applyFilters));
+  chkTrust.forEach(c => c.addEventListener('change', applyFilters));
   searchBox.addEventListener('input', applyFilters);
 
   function clearRowSelections(){
     document.querySelectorAll('.row-picker').forEach(r => r.checked = false);
     rows.forEach(r => r.classList.remove('table-active'));
+  }
+
+  function updateTrustPill(val){
+    const data = trustMap[val] || trustMap[3];
+    trustPill.textContent = data.label;
+    trustPill.className = 'btn btn-block ' + data.class;
   }
 
   function selectRow(tr){
@@ -240,21 +295,19 @@
     dType.textContent  = tr.dataset.type;
     dName.textContent  = tr.querySelector('td:nth-child(4)').textContent; // Name cell
     dEveId.textContent = tr.dataset.eveid;
-    dAvatar.src        = tr.dataset.avatar || 'https://via.placeholder.com/140?text=Avatar';
-    dSeat.classList.remove('disabled');
-    dSeat.classList.remove('text-muted');
+    dAvatar.src        = tr.dataset.avatar || 'https://images.evetech.net/characters/123/portrait?size=128';
+    dSeat.classList.remove('disabled','text-muted');
     dSeat.href         = tr.dataset.seaturl;
 
     // Bind trust form
     fEntityId.value    = tr.dataset.id;
     const tid          = parseInt(tr.dataset.trustid || '3', 10);
     trustRange.value   = tid;
-    trustPill.textContent = trustLabels[tid] || 'Unverified';
+    updateTrustPill(tid);
   }
 
   rows.forEach(tr=>{
     tr.addEventListener('click', (e)=>{
-      // ignore clicks on controls that already handle selection
       if(!e.target.classList.contains('row-picker')){
         selectRow(tr);
       }
@@ -265,13 +318,12 @@
     }
   });
 
-  // Update pill text dynamically & auto-submit on change
+  // Update pill dynamically & auto-submit on change
   trustRange?.addEventListener('input', ()=>{
-    const v = parseInt(trustRange.value,10);
-    trustPill.textContent = trustLabels[v] || '';
+    updateTrustPill(parseInt(trustRange.value,10));
   });
+
   trustRange?.addEventListener('change', ()=>{
-    // Submit and let Laravel reload normally
     if(fEntityId.value){
       trustForm.submit();
     }
@@ -282,4 +334,5 @@
 })();
 </script>
 @endpush
+
 @endsection
