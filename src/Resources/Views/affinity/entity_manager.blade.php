@@ -5,9 +5,16 @@
 
 @section('content')
 @php
-  $trustMap = [1=>'Trusted',2=>'Verified',3=>'Unverified',4=>'Untrusted',5=>'Flagged'];
+  $trustMap = [
+    1 => ['label' => 'Trusted',    'class' => 'btn-primary'],      // blue
+    2 => ['label' => 'Verified',   'class' => 'btn-info'],         // light blue
+    3 => ['label' => 'Unverified', 'class' => 'btn-secondary'],    // grey
+    4 => ['label' => 'Untrusted',  'class' => 'btn-warning'],      // yellow/orange
+    5 => ['label' => 'Flagged',    'class' => 'btn-danger'],       // red
+  ];
+
   $selectedTrustId   = $selected->trust_id   ?? 3;
-  $selectedTrustText = $trustMap[$selectedTrustId] ?? 'Unverified';
+  $selectedTrustData = $trustMap[$selectedTrustId];
   $seat_base = config('app.url');
   // Build the correct SeAT URL for an entity
   $makeSeatUrl = function ($type, $eve_id) use ($seat_base) {
@@ -20,9 +27,6 @@
 @endphp
 
 <div class="container-fluid">
-  @if (session('status'))
-    <div class="alert alert-success">{{ session('status') }}</div>
-  @endif
 
   <div class="row">
     {{-- LEFT: Selected Entity Details --}}
@@ -48,7 +52,7 @@
 
           <div class="d-flex justify-content-center mb-3">
             <img id="d-avatar"
-                 src="{{ $selected->avatar_url ?? 'https://via.placeholder.com/140?text=Avatar' }}"
+                 src="{{ $selected->avatar_url ?? 'https://images.evetech.net/characters/123/portrait?size=128' }}"
                  alt="Avatar"
                  class="rounded-circle"
                  style="width:140px;height:140px;object-fit:cover;">
@@ -67,9 +71,10 @@
             @csrf
             <input type="hidden" name="entity_id" id="f-entity-id" value="{{ $selected->id ?? '' }}">
             <div class="d-grid gap-2 mb-2">
-              <button class="btn btn-primary btn-block" type="button" id="trust-pill">
-                {{ $selectedTrustText }}
-              </button>
+            <button class="btn {{ $selectedTrustData['class'] }} btn-block" 
+                    type="button" id="trust-pill">
+                {{ $selectedTrustData['label'] }}
+            </button>
             </div>
 
             <div class="px-2">
@@ -80,10 +85,6 @@
                      id="trust-range"
                      value="{{ $selectedTrustId }}">
               <div class="text-center small text-muted mt-1">adjust trust relationship</div>
-            </div>
-
-            <div class="text-center mt-3">
-              <button type="submit" class="btn btn-light border">Save</button>
             </div>
           </form>
         </div>
