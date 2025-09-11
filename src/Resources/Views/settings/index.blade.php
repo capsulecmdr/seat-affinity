@@ -26,7 +26,7 @@
             <div class="card-header d-flex align-items-center justify-content-between">
               <strong>{{ $meta['label'] }}</strong>
               <span class="badge badge-primary">
-                <span id="{{ $id }}_num">{{ $val }}</span>
+                <span id="{{ $id }}_num">{{ $val }}:</span>
                 <span id="{{ $id }}_label" class="ml-1"></span>
               </span>
             </div>
@@ -72,11 +72,11 @@
   window.AffinitySettings = {
     trustMap(num) {
       switch (Number(num)) {
-        case 1: return 'Trusted';
-        case 2: return 'Verified';
-        case 3: return 'Unverified';
-        case 4: return 'Untrusted';
-        case 5: return 'Flagged';
+        case 1: return 'Alert on Trusted -';
+        case 2: return 'Alert on Verified -';
+        case 3: return 'Alert on Unverified -';
+        case 4: return 'Alert on Untrusted -';
+        case 5: return 'Alert on Flagged';
         default: return '';
       }
     },
@@ -84,11 +84,11 @@
       // 1..6 as per your description
       switch (Number(num)) {
         case 1: return 'Alerts Off';
-        case 2: return 'Alert on ≥1';
-        case 3: return 'Alert on ≥2';
-        case 4: return 'Alert on ≥3';
-        case 5: return 'Alert on ≥4';
-        case 6: return 'Alert on ≥5';
+        case 2: return 'Alert on all';
+        case 3: return 'Alert on Verified -';
+        case 4: return 'Alert on Unverified -';
+        case 5: return 'Alert on Untrusted -';
+        case 6: return 'Alert on Flagged';
         default: return '';
       }
     },
