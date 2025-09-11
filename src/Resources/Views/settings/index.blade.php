@@ -4,9 +4,6 @@
 
 @section('content')
 <div class="container-fluid">
-  @if (session('status'))
-    <div class="alert alert-success mb-3">{{ session('status') }}</div>
-  @endif
 
   <form method="POST" action="{{ route('affinity.settings.update') }}">
     @csrf
