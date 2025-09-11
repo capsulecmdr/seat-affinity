@@ -66,7 +66,7 @@ class CheckTrustRelationships extends Command
                         if ($trust && $trust->affinity_trust_class_id >= 3) {
 
                             //fire alert
-                            $contact_universeName = UniverseName::where('entity_id',2122692009)->select(['name','category'])->first();
+                            $contact_universeName = UniverseName::where('entity_id',$contact->contact_id)->select(['name','category'])->first();
                             $user_name = $user->name;
                             $contact_name = $contact_universeName->name;
                             $contact_type = $contact_universeName->category;
