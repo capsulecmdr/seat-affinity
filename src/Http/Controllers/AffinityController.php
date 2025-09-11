@@ -4,6 +4,7 @@ namespace CapsuleCmdr\Affinity\Http\Controllers;
 
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
+use CapsuleCmdr\Affinity\Models\AffinitySetting;
 
 
 class AffinityController extends Controller
