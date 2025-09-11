@@ -28,7 +28,7 @@ return [
             [
                 "name"=>"Settings",
                 "icon"=>"fas fa-tools",
-                "route"=>"affinity.settiings",
+                "route"=>"affinity.settings",
                 "permission"=>"affinity.admin",
             ],
             [
