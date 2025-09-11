@@ -100,7 +100,6 @@ class AffinityController extends Controller
                 'affinity_entity.type',          // 'character' | 'corporation' | 'alliance'
                 'affinity_entity.name',
                 'affinity_entity.eve_id',
-                'affinity_entity.avatar_url',
                 DB::raw('atr.affinity_trust_class_id as trust_id'),
                 DB::raw('atc.title as trust_title'),
             ])
@@ -118,7 +117,6 @@ class AffinityController extends Controller
                     'affinity_entity.type',
                     'affinity_entity.name',
                     'affinity_entity.eve_id',
-                    'affinity_entity.avatar_url',
                     DB::raw('atr.affinity_trust_class_id as trust_id'),
                     DB::raw('atc.title as trust_title'),
                 ])

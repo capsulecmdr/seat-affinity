@@ -128,6 +128,21 @@
               </thead>
               <tbody>
               @forelse($entities as $e)
+                @php
+                    switch(strtolower($e->type)){
+                        case "alliance":
+                            $e->avatar_url = "https://images.evetech.net/alliances/". $e->id ."/logo?size=128";
+                        break;
+                        case "corporation":
+                            $e->avatar_url = "https://images.evetech.net/corporations/". $e->id ."/logo?size=128";
+                        break;
+                        case "character":
+                            $e->avatar_url = "https://images.evetech.net/characters/". $e->id ."/portrait?size=128";
+                        break;
+                        default: '';
+
+                    };
+                @endphp
                 <tr class="entity-row"
                     data-type="{{ strtolower($e->type) }}"
                     data-name="{{ strtolower($e->name) }}"
