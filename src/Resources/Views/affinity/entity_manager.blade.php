@@ -227,7 +227,6 @@
   </div>
 </div>
 
-{{-- Inline script keeps it self-contained; feel free to move into your asset pipeline --}}
 @push('javascript')
 <script>
 (function(){
@@ -240,7 +239,12 @@
     5: {label:'Flagged',    class:'btn-danger'}
   };
 
-  const rows        = Array.from(document.querySelectorAll('.entity-row'));
+  const table      = document.getElementById('entities-table');
+  const tableHead  = table.querySelector('thead');
+  const tableBody  = table.querySelector('tbody');
+
+  // We'll refresh this after sorts so other code keeps working
+  let rows = Array.from(document.querySelectorAll('.entity-row'));
 
   // Chip selectors
   const typeChips   = Array.from(document.querySelectorAll('.type-chip'));
@@ -260,7 +264,8 @@
   const trustPill   = document.getElementById('trust-pill');
   const fEntityId   = document.getElementById('f-entity-id');
 
-  // Helpers to get active filters
+  // ---------- FILTERING ----------
+
   function activeTypes(){
     return new Set(typeChips.filter(c => c.checked).map(c => c.dataset.type));
   }
@@ -268,7 +273,6 @@
     return new Set(trustChips.filter(c => c.checked).map(c => parseInt(c.dataset.trust,10)));
   }
 
-  // Apply filters to table
   function applyFilters(){
     const enabledTypes  = activeTypes();
     const enabledTrusts = activeTrusts();
@@ -288,7 +292,6 @@
     });
   }
 
-  // Toggle chip .active class in sync with checkbox state
   function wireChipToggle(chipList){
     chipList.forEach(input => {
       const label = input.closest('label.btn');
@@ -296,7 +299,7 @@
       // Initialize label state
       label.classList.toggle('active', !!input.checked);
 
-      // Explicit toggle on label click
+      // Explicit toggle on label click (works even if input is hidden)
       label.addEventListener('click', (e) => {
         e.preventDefault();
         input.checked = !input.checked;
@@ -315,7 +318,8 @@
 
   searchBox.addEventListener('input', applyFilters);
 
-  // Selection helpers
+  // ---------- SELECTION / TRUST PILL ----------
+
   function clearRowSelections(){
     document.querySelectorAll('.row-picker').forEach(r => r.checked = false);
     rows.forEach(r => r.classList.remove('table-active'));
@@ -330,7 +334,7 @@
   function selectRow(tr){
     clearRowSelections();
     tr.classList.add('table-active');
-    const radio = tr.querySelector('.row-picker');
+    const radio = tr.querySelector('input.row-picker');
     if(radio) radio.checked = true;
 
     // Bind details panel
@@ -349,19 +353,24 @@
     updateTrustPill(tid);
   }
 
-  rows.forEach(tr=>{
-    tr.addEventListener('click', (e)=>{
-      if(!e.target.classList.contains('row-picker')){
-        selectRow(tr);
+  function refreshRowBindings(){
+    rows = Array.from(document.querySelectorAll('.entity-row'));
+    rows.forEach(tr=>{
+      // prevent stacking duplicate handlers
+      tr.__bound || (tr.__bound = true, tr.addEventListener('click', (e)=>{
+        if(!e.target.classList.contains('row-picker')){
+          selectRow(tr);
+        }
+      }));
+      const radio = tr.querySelector('input.row-picker');
+      if(radio && !radio.__bound){
+        radio.__bound = true;
+        radio.addEventListener('change', ()=>selectRow(tr));
       }
     });
-    const radio = tr.querySelector('.row-picker');
-    if(radio){
-      radio.addEventListener('change', ()=>selectRow(tr));
-    }
-  });
+  }
+  refreshRowBindings();
 
-  // Trust range → pill + autosubmit
   trustRange?.addEventListener('input', ()=>{
     updateTrustPill(parseInt(trustRange.value,10));
   });
@@ -372,11 +381,95 @@
     }
   });
 
-  // Initial run
+  // ---------- SORTING ----------
+
+  // Map header index -> sort key
+  // 0: Id      (numeric)
+  // 1: Avatar  (skip)
+  // 2: Type    (string from dataset.type)
+  // 3: Name    (string from cell text)
+  // 4: Eve ID  (numeric from dataset.eveid)
+  // 5: Trust   (numeric from dataset.trustid)
+  // 6: (radio) (skip)
+  const sortableMap = {
+    0: 'id',
+    2: 'type',
+    3: 'name',
+    4: 'eveid',
+    5: 'trust'
+  };
+
+  let currentSort = { key: null, dir: 'asc' }; // dir: 'asc' | 'desc'
+
+  // Add basic cursor + indicator via titles; (optionally add icons here)
+  Array.from(tableHead.querySelectorAll('th')).forEach((th, idx) => {
+    if (idx in sortableMap) {
+      th.style.cursor = 'pointer';
+      th.title = 'Click to sort';
+      th.addEventListener('click', () => {
+        const key = sortableMap[idx];
+        // toggle direction if same key; otherwise asc
+        currentSort.dir = (currentSort.key === key && currentSort.dir === 'asc') ? 'desc' : 'asc';
+        currentSort.key = key;
+        sortTable(key, currentSort.dir);
+      });
+    }
+  });
+
+  function compareValues(a, b, dir){
+    if (a === b) return 0;
+    if (a === undefined || a === null) return (dir === 'asc') ? 1 : -1;
+    if (b === undefined || b === null) return (dir === 'asc') ? -1 : 1;
+    if (typeof a === 'number' && typeof b === 'number'){
+      return (dir === 'asc') ? (a - b) : (b - a);
+    }
+    // fallback string compare (case-insensitive)
+    a = String(a).toLowerCase();
+    b = String(b).toLowerCase();
+    if (a < b) return (dir === 'asc') ? -1 : 1;
+    if (a > b) return (dir === 'asc') ? 1 : -1;
+    return 0;
+  }
+
+  function getSortValue(tr, key){
+    switch(key){
+      case 'id':    return parseInt(tr.dataset.id, 10);
+      case 'eveid': return parseInt(tr.dataset.eveid, 10);
+      case 'trust': return parseInt(tr.dataset.trustid || '3', 10);
+      case 'type':  return tr.dataset.type || '';
+      case 'name':  // use the Name cell text to respect case/spacing
+        return tr.querySelector('td:nth-child(4)')?.textContent?.trim() || '';
+      default: return '';
+    }
+  }
+
+  function sortTable(key, dir){
+    // Only sort visible rows to avoid jumping hidden entries when filters applied
+    const visibleRows = rows.filter(tr => tr.style.display !== 'none');
+
+    visibleRows.sort((a, b) => {
+      const va = getSortValue(a, key);
+      const vb = getSortValue(b, key);
+      return compareValues(va, vb, dir);
+    });
+
+    // Re-append visible rows in sorted order; keep hidden rows in their current order (at end)
+    visibleRows.forEach(tr => tableBody.appendChild(tr));
+    rows.filter(tr => tr.style.display === 'none').forEach(tr => tableBody.appendChild(tr));
+
+    // Rebind row listeners (DOM order changed)
+    refreshRowBindings();
+  }
+
+  // ---------- INITIALIZE ----------
+
   applyFilters();
+
 })();
 </script>
 @endpush
+
+
 
 
 @endsection
