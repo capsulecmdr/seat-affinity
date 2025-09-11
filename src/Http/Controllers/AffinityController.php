@@ -24,17 +24,17 @@ class AffinityController extends Controller
     {
         return [
             // key => [label, min, max, default, help, map (optional)]
-            'alert_threshold_contact'       => ['Contact Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
-            'alert_threshold_contract'      => ['Contract Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
-            'alert_threshold_corporation'   => ['Corporation Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
-            'alert_threshold_mail'          => ['Mail Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
-            'alert_threshold_wallet'        => ['Wallet Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
-            'alert_threshold_kmail_attacker'=> ['Killmail Attacker Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
-            'alert_threshold_kmail_blue'    => ['Killmail Blue Alert Threshold', 1, 2, 3, 4, 5, '1=Trusted,2=Verified,3=Unverified,4=Untrusted,5=Flagged', 'trust'],
+            'alert_threshold_contact'       => ['Contact Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
+            'alert_threshold_contract'      => ['Contract Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
+            'alert_threshold_corporation'   => ['Corporation Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
+            'alert_threshold_mail'          => ['Mail Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
+            'alert_threshold_wallet'        => ['Wallet Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
+            'alert_threshold_kmail_attacker'=> ['Killmail Attacker Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
+            'alert_threshold_kmail_blue'    => ['Killmail Blue Alert Threshold', 1, 5, 3, '1=Trusted … 5=Flagged', 'trust'],
 
             // NOTE: You listed 1…3 but then described 1…6 behaviors.
             // Using 1…6 to match the behavior list.
-            'alert_corp_change'             => ['Corp Change Alert Mode', 1, 2, 3, 4, 5, 6, '1=Off, 2=All, 3=Verfied -, 4=Unverified -, 5=Untrusted -, 6=Flagged only', 'corp_change'],
+            'alert_corp_change'             => ['Corp Change Alert Mode', 1, 6, 3, '1=Off, 2=gte1, 3=gte2, 4=gte3, 5=gte4, 6=gte5', 'corp_change'],
         ];
     }
 
