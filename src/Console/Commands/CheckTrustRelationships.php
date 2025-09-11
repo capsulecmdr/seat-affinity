@@ -14,6 +14,7 @@ use Illuminate\Notifications\AnonymousNotifiable;
 use Seat\Notifications\Models\NotificationGroup;
 use Seat\Notifications\Traits\NotificationDispatchTool;
 use Illuminate\Support\Facades\Notification;
+use Seat\Eveapi\Models\Universe\UniverseName;
 
 class CheckTrustRelationships extends Command
 {
@@ -65,11 +66,10 @@ class CheckTrustRelationships extends Command
                         if ($trust && $trust->affinity_trust_class_id >= 3) {
 
                             //fire alert
-                            $user = "";
-                            $contact_name = "";
-                            $contact_type = "";
-                            $user = "";
-                            $user = "";
+                            $contact_universeName = UniverseName::where('entity_id',2122692009)->select(['name','category'])->first();
+                            $user_name = $user->name;
+                            $contact_name = $contact_universeName->name;
+                            $contact_type = $contact_universeName->category;
 
                             $groups = NotificationGroup::whereHas(
                                 'alerts',
@@ -88,7 +88,7 @@ class CheckTrustRelationships extends Command
                                     $route = $setting[$key];
                                     $anon = (new AnonymousNotifiable)->route($integration->type, $route);
                                     Notification::sendNow($anon,new $notification(
-                                        $user,
+                                        $user_name,
                                         $contact_name,
                                         $contact_type,
                                         now()
