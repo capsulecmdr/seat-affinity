@@ -37,7 +37,6 @@ class CheckTrustRelationships extends Command
 
                     foreach ($contacts as $contact) {
                         $trust = AffinityTrustRelationship::where('affinity_entity_id', $contact->contact_id)->first();
-                        $this->info(sprintf("User %d, Character %d, Contact %d has trust classification %d",$user->id,$character->character_id, $contact->contact_id,$trust->affinity_trust_class_id));
                         if ($trust && $trust->affinity_trust_class_id >= 3) {
                             $msg = sprintf(
                                 "User %d, Character %d, Contact %d has trust classification %d (>=3)",
@@ -49,6 +48,16 @@ class CheckTrustRelationships extends Command
 
                             Log::error($msg);
                             $this->error($msg);
+                        }else{
+                            $msg = sprintf(
+                                "User %d, Character %d, Contact %d has trust classification %d",
+                                $user->id,
+                                $character->character_id,
+                                $contact->contact_id,
+                                $trust->affinity_trust_class_id
+                            );
+                            
+                            $this->info($msg);
                         }
                     }
                 }
