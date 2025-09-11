@@ -149,7 +149,7 @@
                 </div>
 
                 {{-- Search on the far right --}}
-                <div class="ms-auto" style="min-width:220px;">
+                <div class="ml-auto" style="min-width:220px;">
                 <input id="search-box" type="search" class="form-control form-control-sm"
                         placeholder="search (min 3 chars)">
                 </div>
