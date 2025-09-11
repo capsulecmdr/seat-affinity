@@ -70,7 +70,7 @@ class CheckTrustRelationships extends Command
                             if($user->name == $character->name){
                                 $user_name = $user->name;
                             }else{
-                                $user_name = sprintf("%d [reports to %d]",$character->name,$user->name);
+                                $user_name = sprintf("%s [reports to %s]",$character->name,$user->name);
                             }
 
                             //fire alert
