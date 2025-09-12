@@ -20,7 +20,7 @@ Route::middleware(['web','auth'])
 
             $esi = new EsiClient();
             $authed = EsiClient::forCharacter($char_id);
-            $aff = $authed->post('/characters/affiliation/', [], ['characters' => [$char_id]]);
+            $aff = $authed->post('/characters/affiliation/', [], [$char_id]);
 
             return $aff;
         })->name('lab');
