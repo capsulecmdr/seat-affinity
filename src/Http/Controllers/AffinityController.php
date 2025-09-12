@@ -166,7 +166,7 @@ class AffinityController extends Controller
 
         /** @var AffiliationCrawler $crawler */
         $crawler = app(AffiliationCrawler::class);
-        $dossier = $crawler->buildDossierForUser($user);
+        $dossier = $crawler->buildDossierForUser($user)->toArray();
 
         return view('affinity::affinity.trustmanager',['dossier' => $dossier,'char_id' => $char_id,]);
 
