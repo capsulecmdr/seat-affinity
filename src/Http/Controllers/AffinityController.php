@@ -10,6 +10,7 @@ use CapsuleCmdr\Affinity\Models\AffinityEntity;
 use CapsuleCmdr\Affinity\Models\AffinityTrustRelationship;
 use Illuminate\Support\Facades\DB;
 use Seat\Web\Models\User;
+use CapsuleCmdr\Affinity\Services\AffiliationCrawler;
 
 
 class AffinityController extends Controller
