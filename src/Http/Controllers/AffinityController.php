@@ -146,4 +146,15 @@ class AffinityController extends Controller
             ->route('affinity.entities.index', ['selected' => (int) $validated['entity_id']])
             ->with('status', 'Trust relationship updated.');
     }
+
+
+    public function trustManager($char_id){
+
+        if(is_null($char_id)){
+            return response('target not provided',500);
+        }
+
+
+        return response('testing' . $char_id,200);
+    }
 }

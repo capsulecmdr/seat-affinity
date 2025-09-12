@@ -27,6 +27,9 @@ Route::middleware(['web','auth'])
             return $roles['data'];
         })->name('lab');
 
+        Route::get('/trustmanager/{char_id}',[AffinityController::class, 'trustManager'])->name('trustmanager');
+
+
         Route::get('/entities', [AffinityController::class, 'entityManager'])->name('entities.index');
         Route::post('/entities/trust', [AffinityController::class, 'updateTrust'])->name('entities.updateTrust');
 

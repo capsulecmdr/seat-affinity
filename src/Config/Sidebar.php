@@ -14,12 +14,6 @@ return [
                 "permission"=>"affinity.admin",
             ],
             [
-                "name"=>"Trust Center",
-                "icon"=>"fas fa-id-badge",
-                "route"=>"affinity.test",
-                "permission"=>"affinity.admin",
-            ],
-            [
                 "name"=>"Entity Manager",
                 "icon"=>"fas fa-id-card",
                 "route"=>"affinity.entities.index",
