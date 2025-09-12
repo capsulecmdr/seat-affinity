@@ -24,7 +24,7 @@ Route::middleware(['web','auth'])
 
             $roles = $authed->get("/characters/{$char_id}/roles");
 
-            return $roles;
+            return json_decode($roles);
         })->name('lab');
 
         Route::get('/entities', [AffinityController::class, 'entityManager'])->name('entities.index');
