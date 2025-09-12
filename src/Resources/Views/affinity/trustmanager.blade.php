@@ -44,7 +44,7 @@
       </div>
     </div>
     <div class="d-flex gap-2">
-      <a href="{{ route('affinity.dossier', ['char_id'=>$char_id, 'format'=>'json']) }}"
+      <a href="##"
          class="btn btn-sm btn-outline-secondary">
         Export JSON
       </a>
