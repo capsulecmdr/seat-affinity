@@ -1,22 +1,25 @@
 <?php
-// namespace App\Support; // <- uncomment & adjust if you want a namespace
 
 namespace CapsuleCmdr\Affinity\Support;
 
 use Seat\Eveapi\Models\RefreshToken;
 
 /**
- * Laravel-aware ESI helper (native cURL).
- * - Defaults X-Compatibility-Date to today's UTC date (Y-m-d).
- * - Build directly from a character_id via forCharacter($id).
- * - Reads SSO creds from config('services.eveonline.*').
- * - Auto-refreshes access token; persists rotated refresh_token.
+ * EsiClient (Laravel-aware, native cURL)
+ *
+ * Features:
+ * - GET/POST/PUT/DELETE (JSON) for ESI
+ * - Auth via SeAT RefreshToken + SSO client credentials from config
+ * - Auto token refresh; persists rotated refresh_token to DB
+ * - ETag, retries with backoff on 420/5xx, nice errors
+ * - X-Compatibility-Date defaults to today's UTC (Y-m-d)
+ * - Safe default User-Agent for CCP debugging
  */
 class EsiClient
 {
     private string $base = 'https://esi.evetech.net';
     private string $datasource;
-    private ?string $compatDate;
+    private ?string $compatDate;         // defaults to today UTC
     private ?string $acceptLanguage;
     private string $userAgent;
 
@@ -24,21 +27,29 @@ class EsiClient
     private ?string $refreshToken;
     private ?string $clientId;
     private ?string $clientSecret;
-    private ?int $accessTokenExpiresAt;
+    private ?int    $accessTokenExpiresAt;
 
-    private ?int $characterId = null; // used to persist rotated refresh tokens
-    private int $maxRetries = 3;
+    private ?int $characterId = null;    // For persisting rotated refresh tokens
+    private int  $maxRetries  = 3;
 
     /**
-     * Construct directly (Laravel-safe).
-     * If compat_date omitted, defaults to today's UTC (Y-m-d).
+     * Construct directly. Omitted fields have sensible defaults.
+     * opts:
+     *  - datasource (default: 'tranquility')
+     *  - compat_date (default: gmdate('Y-m-d'))
+     *  - accept_language (e.g., 'en')
+     *  - user_agent (default below)
+     *  - access_token, refresh_token, client_id, client_secret
+     *  - access_token_expires_at (unix time)
+     *  - character_id (for rotating/persisting refresh token)
      */
     public function __construct(array $opts = [])
     {
         $this->datasource      = $opts['datasource']       ?? 'tranquility';
-        $this->compatDate      = $opts['compat_date']      ?? gmdate('Y-m-d'); // <- default today (UTC)
+        $this->compatDate      = $opts['compat_date']      ?? gmdate('Y-m-d'); // default = today (UTC)
         $this->acceptLanguage  = $opts['accept_language']  ?? null;
-        $this->userAgent       = $opts['user_agent']       ?? 'CapsuleCmdr-Affinity/1.0 (+https://github.com/capsulecmdr/seat-affinity)';
+        $this->userAgent       = $opts['user_agent']
+            ?? 'CapsuleCmdr-Affinity/1.0 (+https://github.com/capsulecmdr/seat-affinity)';
 
         $this->accessToken     = $opts['access_token']     ?? null;
         $this->refreshToken    = $opts['refresh_token']    ?? null;
@@ -50,40 +61,37 @@ class EsiClient
 
     /**
      * Build an authenticated client from a SeAT character_id.
-     * - Pulls refresh token from Seat\Eveapi\Models\RefreshToken
-     * - Uses config('services.eveonline.client_id/secret')
-     * - Immediately refreshes to obtain a fresh access token
+     * - Loads RefreshToken from DB
+     * - Loads SSO creds from config('services.eveonline.client_id/secret')
+     * - Refreshes immediately to obtain a fresh access_token
+     * - Persists rotated refresh_token if CCP sends one
      */
     public static function forCharacter(int $characterId): self
     {
-        // 1) Load refresh token row (SeAT DB)
         /** @var RefreshToken|null $row */
         $row = RefreshToken::where('character_id', $characterId)->first();
         if (!$row) {
             throw new \RuntimeException("No RefreshToken found for character_id {$characterId}");
         }
 
-        // 2) Get SSO creds from config
         $clientId     = config('services.eveonline.client_id');
         $clientSecret = config('services.eveonline.client_secret');
 
         if (!$clientId || !$clientSecret) {
-            throw new \RuntimeException("Missing eveonline SSO credentials in config('services.eveonline.*').");
+            throw new \RuntimeException("Missing SSO creds in config('services.eveonline.{client_id,client_secret}').");
         }
 
-        // 3) Construct client with defaults (compat_date -> today)
         $client = new self([
             'client_id'     => $clientId,
             'client_secret' => $clientSecret,
             'refresh_token' => $row->refresh_token,
             'character_id'  => $characterId,
-            // 'accept_language' => 'en', // uncomment if you want localization
+            // 'accept_language' => 'en',
+            // 'compat_date' => gmdate('Y-m-d'), // implicit default
         ]);
 
-        // 4) Get a fresh access token (and persist rotated refresh token if CCP issues one)
         $tok = $client->refreshAccessToken();
 
-        // Persist rotated refresh token if present/changed
         if (!empty($tok['refresh_token']) && $tok['refresh_token'] !== $row->refresh_token) {
             $row->refresh_token = $tok['refresh_token'];
             $row->save();
@@ -92,15 +100,11 @@ class EsiClient
         return $client;
     }
 
-    // ---------- Public convenience wrappers ----------
+    // ---- Convenience wrappers ------------------------------------------------
+
     public function get(string $path, array $query = [], array $headers = [], ?string $etag = null): array
     {
         return $this->request('GET', $path, $query, null, $headers, $etag);
-    }
-
-    public function delete(string $path, array $query = [], array $headers = [], ?array $body = null): array
-    {
-        return $this->request('DELETE', $path, $query, $body, $headers);
     }
 
     public function post(string $path, array $query = [], ?array $json = null, array $headers = []): array
@@ -113,7 +117,13 @@ class EsiClient
         return $this->request('PUT', $path, $query, $json, $headers);
     }
 
-    // ---------- Core request ----------
+    public function delete(string $path, array $query = [], array $headers = [], ?array $json = null): array
+    {
+        return $this->request('DELETE', $path, $query, $json, $headers);
+    }
+
+    // ---- Core request --------------------------------------------------------
+
     public function request(
         string $method,
         string $path,
@@ -125,6 +135,7 @@ class EsiClient
         if (!array_key_exists('datasource', $query)) {
             $query['datasource'] = $this->datasource;
         }
+
         $url = $this->buildUrl($path, $query);
         $headers = $this->buildHeaders($etag, $extraHeaders);
 
@@ -139,12 +150,13 @@ class EsiClient
             $attempt++;
             [$status, $respHeaders, $body] = $this->curlJson($method, $url, $headers, $json);
 
+            // 401 → try refresh once (if possible), then retry
             if ($status === 401 && $this->canRefresh()) {
                 try {
                     $tok = $this->refreshAccessToken();
                     $headers['Authorization'] = 'Bearer ' . $this->accessToken;
 
-                    // If CCP rotated refresh_token and we know characterId, persist it
+                    // persist rotated refresh token if character known
                     if (!empty($tok['refresh_token']) && $this->characterId) {
                         /** @var RefreshToken|null $row */
                         $row = RefreshToken::where('character_id', $this->characterId)->first();
@@ -154,29 +166,38 @@ class EsiClient
                         }
                     }
 
-                    // retry immediately after refresh
+                    // retry after refresh
                     [$status, $respHeaders, $body] = $this->curlJson($method, $url, $headers, $json);
                 } catch (\Throwable $e) {
                     $lastErr = $e;
                 }
             }
 
+            // Success or Not Modified
             if (($status >= 200 && $status < 300) || $status === 304) {
                 return $this->makeReturn($status, $respHeaders, $body);
             }
 
+            // Retry on 420 or 5xx with jittered backoff
             if ($status === 420 || ($status >= 500 && $status <= 599)) {
                 $sleep = $this->computeBackoff($attempt, $respHeaders);
                 usleep($sleep * 1_000_000);
                 continue;
             }
 
+            // Non-retryable
             return $this->makeReturn($status, $respHeaders, $body);
 
         } while ($attempt <= $this->maxRetries);
 
         if ($lastErr) {
-            return ['status' => 0, 'headers' => [], 'error' => $lastErr->getMessage(), 'data' => null, 'raw' => null];
+            return [
+                'status'  => 0,
+                'headers' => [],
+                'error'   => $lastErr->getMessage(),
+                'data'    => null,
+                'raw'     => null,
+            ];
         }
 
         return [
@@ -188,19 +209,21 @@ class EsiClient
         ];
     }
 
-    // ---------- SSO helpers ----------
+    // ---- SSO (form-encoded) -------------------------------------------------
+
     public function exchangeCodeForTokens(string $authCode, string $redirectUri): array
     {
         $this->ensureSsoConfig();
-        $tokenEndpoint = 'https://login.eveonline.com/v2/oauth/token';
+        $endpoint = 'https://login.eveonline.com/v2/oauth/token';
 
-        $payload = [
+        $form = [
             'grant_type'   => 'authorization_code',
             'code'         => $authCode,
             'redirect_uri' => $redirectUri,
         ];
 
-        [$status, , $raw] = $this->curlJson('POST', $tokenEndpoint, $this->ssoHeaders(), $payload);
+        [$status, , $raw] = $this->curlForm('POST', $endpoint, $this->ssoHeaders(), $form);
+
         if ($status !== 200) {
             throw new \RuntimeException("SSO token exchange failed: HTTP $status — $raw");
         }
@@ -213,14 +236,22 @@ class EsiClient
     public function refreshAccessToken(): array
     {
         $this->ensureSsoConfig(true);
-        $tokenEndpoint = 'https://login.eveonline.com/v2/oauth/token';
+        $endpoint = 'https://login.eveonline.com/v2/oauth/token';
 
-        $payload = [
+        $form = [
             'grant_type'    => 'refresh_token',
             'refresh_token' => $this->refreshToken,
         ];
 
-        [$status, , $raw] = $this->curlJson('POST', $tokenEndpoint, $this->ssoHeaders(), $payload);
+        [$status, , $raw] = $this->curlForm('POST', $endpoint, $this->ssoHeaders(), $form);
+
+        // Friendlier message for revoked/expired refresh tokens
+        if ($status === 400 && stripos($raw, 'invalid_grant') !== false) {
+            throw new \RuntimeException(
+                "SSO refresh failed: invalid_grant (token revoked/expired). Re-auth the character."
+            );
+        }
+
         if ($status !== 200) {
             throw new \RuntimeException("SSO token refresh failed: HTTP $status — $raw");
         }
@@ -239,15 +270,17 @@ class EsiClient
     public function setRefreshCredentials(string $refreshToken, string $clientId, string $clientSecret): void
     {
         $this->refreshToken = $refreshToken;
-        $this->clientId = $clientId;
+        $this->clientId     = $clientId;
         $this->clientSecret = $clientSecret;
     }
 
-    // ---------- Internal ----------
+    // ---- Internals -----------------------------------------------------------
+
     private function buildUrl(string $path, array $query): string
     {
         $isAbsolute = str_starts_with($path, 'http://') || str_starts_with($path, 'https://');
         $url = $isAbsolute ? $path : rtrim($this->base, '/') . '/' . ltrim($path, '/');
+
         if (!empty($query)) {
             $qs = http_build_query($query, '', '&', PHP_QUERY_RFC3986);
             $url .= (str_contains($url, '?') ? '&' : '?') . $qs;
@@ -258,11 +291,12 @@ class EsiClient
     private function buildHeaders(?string $etag, array $extra): array
     {
         $headers = [
-            'Accept'                 => 'application/json',
-            'Content-Type'           => 'application/json',
-            'User-Agent'             => $this->userAgent,
-            'X-Compatibility-Date'   => $this->compatDate ?? gmdate('Y-m-d'),
+            'Accept'               => 'application/json',
+            'Content-Type'         => 'application/json',
+            'User-Agent'           => $this->userAgent,
+            'X-Compatibility-Date' => $this->compatDate ?? gmdate('Y-m-d'),
         ];
+
         if ($this->acceptLanguage) {
             $headers['Accept-Language'] = $this->acceptLanguage;
         }
@@ -273,6 +307,17 @@ class EsiClient
             $headers[$k] = $v;
         }
         return $headers;
+    }
+
+    private function ssoHeaders(): array
+    {
+        $basic = base64_encode(($this->clientId ?? '') . ':' . ($this->clientSecret ?? ''));
+        return [
+            'Accept'        => 'application/json',
+            'Content-Type'  => 'application/x-www-form-urlencoded', // IMPORTANT
+            'Authorization' => 'Basic ' . $basic,
+            'User-Agent'    => $this->userAgent,
+        ];
     }
 
     private function curlJson(string $method, string $url, array $headers, ?array $json): array
@@ -289,18 +334,17 @@ class EsiClient
             CURLOPT_HEADER         => true,
             CURLOPT_CUSTOMREQUEST  => strtoupper($method),
             CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => $flatHeaders,
         ];
 
         if ($json !== null) {
             $opts[CURLOPT_POSTFIELDS] = json_encode($json, JSON_UNESCAPED_SLASHES);
         }
 
-        $opts[CURLOPT_HTTPHEADER] = $flatHeaders;
-
         curl_setopt_array($ch, $opts);
-        $resp = curl_exec($ch);
-        $err  = curl_error($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $resp    = curl_exec($ch);
+        $err     = curl_error($ch);
+        $code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $hdrSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
         curl_close($ch);
 
@@ -315,12 +359,49 @@ class EsiClient
         return [$code, $parsedHeaders, $body];
     }
 
+    private function curlForm(string $method, string $url, array $headers, array $form): array
+    {
+        $ch = curl_init();
+        $flat = [];
+        foreach ($headers as $k => $v) {
+            $flat[] = $k . ': ' . $v;
+        }
+
+        $opts = [
+            CURLOPT_URL            => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER         => true,
+            CURLOPT_CUSTOMREQUEST  => strtoupper($method),
+            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_HTTPHEADER     => $flat,
+            CURLOPT_POSTFIELDS     => http_build_query($form, '', '&', PHP_QUERY_RFC3986),
+        ];
+
+        curl_setopt_array($ch, $opts);
+        $resp    = curl_exec($ch);
+        $err     = curl_error($ch);
+        $code    = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $hdrSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        curl_close($ch);
+
+        if ($resp === false) {
+            throw new \RuntimeException('cURL error: ' . $err);
+        }
+
+        $rawHeaders = substr($resp, 0, $hdrSize);
+        $body       = substr($resp, $hdrSize);
+
+        return [$code, $this->parseHeaders($rawHeaders), $body];
+    }
+
     private function parseHeaders(string $raw): array
     {
         $lines = preg_split("/\r\n|\n|\r/", trim($raw));
         $headers = [];
         foreach ($lines as $line) {
-            if (stripos($line, 'HTTP/') === 0) { continue; }
+            if ($line === '' || stripos($line, 'HTTP/') === 0) {
+                continue; // skip status lines
+            }
             $pos = strpos($line, ':');
             if ($pos !== false) {
                 $name = trim(substr($line, 0, $pos));
@@ -364,26 +445,15 @@ class EsiClient
         $reset = null;
         foreach (['X-Esi-Error-Limit-Reset', 'X-Rate-Limit-Reset'] as $h) {
             if (isset($headers[$h])) {
-                $reset = (float)$headers[$h];
+                $reset = (float) $headers[$h];
                 break;
             }
         }
         if ($reset !== null && $reset > 0) {
             return max(1.0, $reset) + (mt_rand(0, 300) / 1000.0);
         }
-        $base = pow(2, $attempt - 1);
+        $base = pow(2, $attempt - 1); // 1,2,4,8...
         return min(10.0, $base + (mt_rand(0, 500) / 1000.0));
-    }
-
-    private function ssoHeaders(): array
-    {
-        $basic = base64_encode($this->clientId . ':' . $this->clientSecret);
-        return [
-            'Accept'       => 'application/json',
-            'Content-Type' => 'application/json',
-            'Authorization'=> 'Basic ' . $basic,
-            'User-Agent'   => $this->userAgent,
-        ];
     }
 
     private function ensureSsoConfig(bool $needsRefreshToken = false): void
@@ -410,7 +480,7 @@ class EsiClient
             $this->refreshToken = $tok['refresh_token'];
         }
         if (isset($tok['expires_in'])) {
-            $this->accessTokenExpiresAt = time() + ((int)$tok['expires_in'] - 30);
+            $this->accessTokenExpiresAt = time() + ((int) $tok['expires_in'] - 30);
         }
     }
 }
