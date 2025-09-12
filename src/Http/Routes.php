@@ -4,8 +4,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use CapsuleCmdr\Affinity\Http\Controllers\AffinityController;
 
-use Seat\Eseye\Eseye;
-use Seat\Eseye\Containers\EsiAuthentication;
+use CapsuleCmdr\Affinity\Support\EsiClient;
 
 Route::middleware(['web','auth'])
     ->prefix('affinity')
@@ -17,25 +16,13 @@ Route::middleware(['web','auth'])
 
         Route::get('/lab', function () {
 
-            $client_id = config('services.eveonline.client_id');
-            $client_secret = config('services.eveonline.client_secret');
-
             $char_id = 2117189532;
-            $rt = \Seat\Eveapi\Models\RefreshToken::where('character_id',$char_id)->first();
 
-            $auth = new EsiAuthentication([
-            'client_id'  => $client_id,
-            'secret' => $client_secret,
-            'refresh_token' => $rt->token,
-            // 'access_token' optional; Eseye will fetch one using the refresher
-            // 'scopes' optional; Eseye can work without providing this
-            ]);
+            $esi = new EsiClient();
+            $authed = EsiClient::forCharacter($char_id);
+            $aff = $authed->post('/v1/characters/affiliation/', [], ['characters' => [$char_id]]);
 
-            $esi = new Eseye($auth);
-
-            $me = $esi->invoke('get','/characters/{character_id}/', ['character_id' => $char_id]);
-
-            return $me;
+            return $aff;
         })->name('lab');
 
         Route::get('/entities', [AffinityController::class, 'entityManager'])->name('entities.index');
