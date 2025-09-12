@@ -147,14 +147,24 @@ class AffinityController extends Controller
             ->with('status', 'Trust relationship updated.');
     }
 
-
-    public function trustManager($char_id){
-
-        if(is_null($char_id)){
-            return response('target not provided',500);
+    public function trustManager(int $char_id)
+    {
+        $tokenRow = DB::table('refresh_tokens')->where('character_id', $char_id)->first();
+        if (!$tokenRow || !$tokenRow->user_id) {
+            return response('invalid target provided', Response::HTTP_BAD_REQUEST);
         }
 
+        $ownerUserId = (int) $tokenRow->user_id;
+        $user = User::with('characters')->find($ownerUserId);
 
-        return response('testing' . $char_id,200);
+        if (!$user || $user->characters->isEmpty()) {
+            return response('owner has no linked characters', Response::HTTP_BAD_REQUEST);
+        }
+
+        /** @var AffiliationCrawler $crawler */
+        $crawler = app(AffiliationCrawler::class);
+        $dossier = $crawler->buildDossierForUser($user);
+
+        return response()->json($dossier->toArray(), Response::HTTP_OK);
     }
 }
