@@ -22,7 +22,9 @@ Route::middleware(['web','auth'])
             $authed = EsiClient::forCharacter($char_id);
             $aff = $authed->post('/characters/affiliation/', [], [$char_id]);
 
-            return $aff;
+            $roles = $authed->get("/characters/{$char_id}/roles");
+
+            return $roles;
         })->name('lab');
 
         Route::get('/entities', [AffinityController::class, 'entityManager'])->name('entities.index');
