@@ -434,12 +434,17 @@ class AffiliationCrawler
     /** Attach Affinity entity + latest trust classification (if exists) */
     protected function attachAffinity(array $e): array
     {
-        $aff = $this->findAffinityEntityId($e['type'], $e['id']);
+        $affId = $this->findAffinityEntityId($e['type'], (int) $e['id']);
 
-        if ($aff) {
+        // OPTIONAL: auto-create if missing
+        if (!$affId) {
+            $affId = $this->ensureAffinityEntity($e);
+        }
+
+        if ($affId) {
             $trust = DB::table('affinity_trust_relationship as r')
                 ->leftJoin('affinity_trust_classification as c', 'c.id', '=', 'r.affinity_trust_class_id')
-                ->where('r.affinity_entity_id', $aff)
+                ->where('r.affinity_entity_id', $affId)
                 ->orderByDesc('r.updated_at')
                 ->orderByDesc('r.created_at')
                 ->first([
@@ -451,7 +456,7 @@ class AffiliationCrawler
                 ]);
 
             $e['meta']['affinity'] = [
-                'affinity_entity_id' => $aff,
+                'affinity_entity_id' => $affId,
                 'trust' => $trust ? [
                     'relationship_id' => $trust->relationship_id,
                     'class_id'        => $trust->affinity_trust_class_id,
@@ -460,41 +465,73 @@ class AffiliationCrawler
                     'created_at'      => (string) $trust->created_at,
                 ] : null,
             ];
+
+            // Keep Affinity name fresh with our latest ESI name (optional)
+            try {
+                DB::table('affinity_entity')
+                ->where('id', $affId)
+                ->update(['name' => $e['name'], 'updated_at' => now('UTC')]);
+            } catch (\Throwable) { /* ignore */ }
+
         } else {
+            // Shouldn't happen if ensureAffinityEntity used; keep null to signal unmapped case
             $e['meta']['affinity'] = [
                 'affinity_entity_id' => null,
                 'trust' => null,
             ];
         }
 
-        // cache enriched node
+        // Cache enriched+affinity node
         $this->nameCache[$e['id']] = $e;
         return $e;
     }
 
+
     /** Locate Affinity Entity row id for (type, EVE id) across a few common shapes. */
     protected function findAffinityEntityId(string $type, int $eveId): ?int
     {
+        // normalize type to your canonical values
+        $type = strtolower($type); // 'character' | 'corporation' | 'alliance'
+
         $id = DB::table('affinity_entity')
-            ->where(function ($w) use ($type) {
-                $w->where('entity_type', $type)
-                  ->orWhere('type', $type)
-                  ->orWhere('kind', $type);
-            })
-            ->where(function ($w) use ($eveId) {
-                $w->where('entity_id', $eveId)
-                  ->orWhere('external_id', $eveId)
-                  ->orWhere('reference_id', $eveId)
-                  ->orWhere('eve_id', $eveId);
-            })
+            ->where('type', $type)
+            ->where('eve_id', $eveId)
             ->value('id');
 
-        if ($id) return (int) $id;
-
-        $composite = "{$type}:{$eveId}";
-        $id = DB::table('affinity_entity')->where('composite_key', $composite)->value('id');
-
         return $id ? (int) $id : null;
+    }
+
+    protected function ensureAffinityEntity(array $node): int
+    {
+        // $node: ['type' => ..., 'id' => eve_id, 'name' => ..., 'meta' => ...]
+        $type  = strtolower($node['type']);
+        $eveId = (int) $node['id'];
+        $name  = (string) ($node['name'] ?? (string)$eveId);
+
+        // Try fast path
+        $existing = DB::table('affinity_entity')
+            ->where('type', $type)
+            ->where('eve_id', $eveId)
+            ->value('id');
+
+        if ($existing) return (int) $existing;
+
+        // Upsert (race-safe if you added the unique index)
+        try {
+            return (int) DB::table('affinity_entity')->insertGetId([
+                'type'       => $type,
+                'eve_id'     => $eveId,
+                'name'       => $name,
+                'created_at' => now('UTC'),
+                'updated_at' => now('UTC'),
+            ]);
+        } catch (\Throwable) {
+            // Another process might have inserted; fetch again
+            return (int) DB::table('affinity_entity')
+                ->where('type', $type)
+                ->where('eve_id', $eveId)
+                ->value('id');
+        }
     }
 
     /** Try to guess entity type from local names or /universe/names, then enrich. */
