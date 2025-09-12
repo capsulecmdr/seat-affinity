@@ -149,7 +149,7 @@ class AffinityController extends Controller
             ->with('status', 'Trust relationship updated.');
     }
 
-    public function trustManager(int $char_id)
+    public function trustManager($char_id)
     {
         $tokenRow = DB::table('refresh_tokens')->where('character_id', $char_id)->first();
         if (!$tokenRow || !$tokenRow->user_id) {
