@@ -43,7 +43,7 @@ class HandleCorporationChanged implements ShouldQueue
         //     'user_ids' => json_encode($ownerUserIds),
         // ]);
 
-        Log::alert("Affinity: {$charName} corp change {$oldCorpStr} → {$newCorpStr}", [
+        Log::error("Affinity: {$charName} corp change {$oldCorpStr} → {$newCorpStr}", [
             'character_id' => $event->character_id,
             'old_corp_id'  => $event->old_corporation_id,
             'new_corp_id'  => $event->new_corporation_id,
