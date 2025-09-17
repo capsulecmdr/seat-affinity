@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Event;
 
+use CapsuleCmdr\Affinity\Providers\AffinityEventServiceProvider;
+use Seat\Eveapi\Models\Character\CharacterInfo;
+use CapsuleCmdr\Affinity\Observers\CharacterInfoObserver;
+
 class AffinityServiceProvider extends AbstractSeatPlugin
 {
 
@@ -73,6 +77,9 @@ class AffinityServiceProvider extends AbstractSeatPlugin
 
         //register permissions
         $this->registerPermissions(__DIR__ . '/Config/Permissions/Permissions.php','affinity');
+
+        //register event service provider
+        $this->app->register(AffinityEventServiceProvider::class);
 
         //register settings helper
         $this->app->singleton('affinity.settings', function () {
