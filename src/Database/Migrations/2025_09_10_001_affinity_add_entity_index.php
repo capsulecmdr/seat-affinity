@@ -9,18 +9,18 @@ return new class extends Migration
     {
         Schema::table('affinity_entity', function (Blueprint $table) {
             // unique pair (entity_type + entity_id)
-            $table->unique(['entity_type', 'entity_id'], 'affinity_entity_type_id_unique');
+            $table->unique(['type', 'eve_id'], 'affinity_eve_type_id_unique');
 
             // index for faster lookups by type + name
-            $table->index(['entity_type', 'name']);
+            $table->index(['type', 'name']);
         });
     }
 
     public function down(): void
     {
         Schema::table('affinity_entity', function (Blueprint $table) {
-            $table->dropUnique('affinity_entity_type_id_unique');
-            $table->dropIndex(['entity_type', 'name']);
+            $table->dropUnique('affinity_type_id_unique');
+            $table->dropIndex(['type', 'name']);
         });
     }
 };
