@@ -33,6 +33,17 @@ if (! function_exists('affinity_setting_delete')) {
  * @param array  $notificationArgs   Constructor args for the Notification
  * @param bool   $sendNow            true => sendNow (sync), false => send (queued if ShouldQueue)
  * @return int                       Number of notifications attempted
+ * 
+ * 
+ * 
+ * // Example: send a Discord-ready notification to all subscribers of an alert
+*    affinity_notify(
+*        'affinity.corp_changed',
+*        \CapsuleCmdr\Affinity\Notifications\CorpChangeDiscordNotification::class,
+*        ['User X', 'Orsiki', 'character', now()],
+*        false // set true to send synchronously
+*    );
+ * 
  */
 function affinity_notify(string $alertKey, string $notificationClass, array $notificationArgs = [], bool $sendNow = false): int
 {
@@ -42,7 +53,7 @@ function affinity_notify(string $alertKey, string $notificationClass, array $not
         ->get();
 
     if ($groups->isEmpty()) {
-        return 0;
+        return -1;
     }
 
     $sent = 0;
