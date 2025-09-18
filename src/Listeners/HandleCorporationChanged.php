@@ -66,6 +66,10 @@ class HandleCorporationChanged implements ShouldQueue
             'owners'       => $ownerIdsArray,
         ]);
 
+
+        
+
+
         // Example: persist internal alert (uncomment if you have the model/table)
         // \CapsuleCmdr\Affinity\Models\AffinityAlert::create([
         //     'type'         => 'corp_change',

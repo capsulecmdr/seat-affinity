@@ -2,6 +2,11 @@
 
 use Illuminate\Support\Facades\App;
 
+use Illuminate\Notifications\AnonymousNotifiable;
+use Illuminate\Support\Facades\Notification;
+use Seat\Notifications\Models\NotificationGroup;
+
+
 if (! function_exists('affinity_setting')) {
     function affinity_setting(string $key, ?string $default = null): ?string {
         return App::make('affinity.settings')->get($key, $default);
@@ -19,3 +24,50 @@ if (! function_exists('affinity_setting_delete')) {
         return App::make('affinity.settings')->delete($key);
     }
 }
+
+/**
+ * Send a notification to all integrations subscribed to an alert key.
+ *
+ * @param string $alertKey           e.g. 'affinity.corp_changed'
+ * @param string $notificationClass  FQCN of a Laravel Notification
+ * @param array  $notificationArgs   Constructor args for the Notification
+ * @param bool   $sendNow            true => sendNow (sync), false => send (queued if ShouldQueue)
+ * @return int                       Number of notifications attempted
+ */
+function affinity_notify(string $alertKey, string $notificationClass, array $notificationArgs = [], bool $sendNow = false): int
+{
+    // Find groups subscribed to this alert
+    $groups = NotificationGroup::whereHas('alerts', fn($q) => $q->where('alert', $alertKey))
+        ->with('integrations')
+        ->get();
+
+    if ($groups->isEmpty()) {
+        return 0;
+    }
+
+    $sent = 0;
+
+    foreach ($groups as $group) {
+        foreach ($group->integrations as $integration) {
+            // Minimal route resolution: first value in settings array
+            $settings = (array) ($integration->settings ?? []);
+            $firstKey = array_key_first($settings);
+            $route = $firstKey ? ($settings[$firstKey] ?? null) : null;
+            if (! $route) {
+                continue;
+            }
+
+            $anon = (new AnonymousNotifiable)->route($integration->type, $route);
+            $notification = new $notificationClass(...$notificationArgs);
+
+            $sendNow
+                ? Notification::sendNow($anon, $notification)
+                : Notification::send($anon, $notification);
+
+            $sent++;
+        }
+    }
+
+    return $sent;
+}
+
