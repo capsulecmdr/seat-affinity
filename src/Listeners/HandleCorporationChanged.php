@@ -21,6 +21,7 @@ class HandleCorporationChanged implements ShouldQueue
 
     public function handle(CorporationChanged $event): void
     {
+        Log::warning("Affinity: Corp Changed Lisener Fired.");
         // Load character
         $char = CharacterInfo::find($event->character_id);
         if (! $char) {
@@ -58,7 +59,7 @@ class HandleCorporationChanged implements ShouldQueue
         $owners = !empty($ownerIdsArray) ? User::whereIn('id', $ownerIdsArray)->get() : collect();
 
         // Persist/log/notify (swap to Log::info; ERROR is too noisy for normal state changes)
-        Log::info("Affinity: {$charName} corporation changed {$oldCorpStr} → {$newCorpStr}", [
+        Log::warning("Affinity: {$charName} corporation changed {$oldCorpStr} → {$newCorpStr}", [
             'character_id' => $event->character_id,
             'old_corp_id'  => $event->old_corporation_id,
             'new_corp_id'  => $event->new_corporation_id,
