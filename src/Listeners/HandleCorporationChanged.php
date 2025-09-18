@@ -15,7 +15,7 @@ class HandleCorporationChanged implements ShouldQueue
 {
     use InteractsWithQueue;
 
-    public $queue = 'default';
+    public $queue = 'notifications';
 
     public function handle(CorporationChanged $event): void
     {
