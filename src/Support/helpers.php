@@ -24,43 +24,56 @@ if (! function_exists('affinity_setting_delete')) {
         return App::make('affinity.settings')->delete($key);
     }
 }
-
 /**
  * Send a notification to all integrations subscribed to an alert key.
  *
- * @param string $alertKey           e.g. 'affinity.corp_changed'
- * @param string $notificationClass  FQCN of a Laravel Notification
- * @param array  $notificationArgs   Constructor args for the Notification
- * @param bool   $sendNow            true => sendNow (sync), false => send (queued if ShouldQueue)
- * @return int                       Number of notifications attempted
- * 
- * 
- * 
- * // Example: send a Discord-ready notification to all subscribers of an alert
-*    affinity_notify(
-*        'affinity.corp_changed',
-*        \CapsuleCmdr\Affinity\Notifications\CorpChangeDiscordNotification::class,
-*        ['User X', 'Orsiki', 'character', now()],
-*        false // set true to send synchronously
-*    );
- * 
+ *  affinity_notify(
+ *      'affinity.alert_contact',
+ *      ['TesterUser','Orsiki','character', now()],  // args your Notification expects
+ *      true                                          // send synchronously for testing
+ *  );
+ *
+ * @param string      $alertKey         e.g. 'affinity.alert_contact'
+ * @param array       $notificationArgs Constructor args for the Notification (optional)
+ * @param bool        $sendNow          true => sendNow (sync), false => send (queued if ShouldQueue)
+ * @param string|null $onlyHandlerType  e.g. 'discord' to restrict to that integration type (optional)
+ * @return int                          Number of notifications attempted
  */
-function affinity_notify(string $alertKey, string $notificationClass, array $notificationArgs = [], bool $sendNow = false): int
+function affinity_notify(string $alertKey, array $notificationArgs = [], bool $sendNow = false, ?string $onlyHandlerType = null): int
 {
+    $map = config('notifications.alerts');
+    if (! isset($map[$alertKey]['handlers']) || ! is_array($map[$alertKey]['handlers'])) {
+        return 0;
+    }
+
     // Find groups subscribed to this alert
-    $groups = NotificationGroup::whereHas('alerts', fn($q) => $q->where('alert', $alertKey))
+    $groups = NotificationGroup::whereHas('alerts', fn ($q) => $q->where('alert', $alertKey))
         ->with('integrations')
         ->get();
 
     if ($groups->isEmpty()) {
-        return -1;
+        return 0;
     }
 
     $sent = 0;
 
     foreach ($groups as $group) {
         foreach ($group->integrations as $integration) {
-            // Minimal route resolution: first value in settings array
+            $type = (string) ($integration->type ?? '');
+
+            // If caller wants to limit to a specific handler/integration type
+            if ($onlyHandlerType && $type !== $onlyHandlerType) {
+                continue;
+            }
+
+            // Resolve the Notification class from config by integration type
+            $handlers = $map[$alertKey]['handlers'];
+            if (! isset($handlers[$type]) || ! class_exists($handlers[$type])) {
+                continue;
+            }
+            $notificationClass = $handlers[$type];
+
+            // Minimal route resolution: take the first value from settings array
             $settings = (array) ($integration->settings ?? []);
             $firstKey = array_key_first($settings);
             $route = $firstKey ? ($settings[$firstKey] ?? null) : null;
@@ -68,7 +81,7 @@ function affinity_notify(string $alertKey, string $notificationClass, array $not
                 continue;
             }
 
-            $anon = (new AnonymousNotifiable)->route($integration->type, $route);
+            $anon = (new AnonymousNotifiable)->route($type, $route);
             $notification = new $notificationClass(...$notificationArgs);
 
             $sendNow
@@ -81,4 +94,5 @@ function affinity_notify(string $alertKey, string $notificationClass, array $not
 
     return $sent;
 }
+
 

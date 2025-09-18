@@ -41,4 +41,10 @@ return [
             'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\MailHistoryAlert::class,
         ],
     ],
+    'affinity.notification_corp_changed' => [
+        'label' => 'affinity::notifications.corp_changed',
+        'handlers' => [
+            'discord' => \CapsuleCmdr\Affinity\Notifications\Discord\CorporationChanged::class,
+        ],
+    ],
 ];
