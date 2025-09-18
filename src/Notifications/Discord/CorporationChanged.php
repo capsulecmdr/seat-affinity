@@ -7,8 +7,9 @@ use Seat\Notifications\Services\Discord\Messages\DiscordMessage;
 use Seat\Notifications\Services\Discord\Messages\DiscordEmbed;
 use Seat\Notifications\Services\Discord\Messages\DiscordEmbedField;
 use Carbon\Carbon;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class CorporationChanged extends AbstractDiscordNotification
+class CorporationChanged extends AbstractDiscordNotification implements ShouldQueue
 {
     public function __construct(
         public string $character,        // Character name
