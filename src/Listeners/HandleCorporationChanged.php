@@ -80,33 +80,5 @@ class HandleCorporationChanged implements ShouldQueue
         false,                                           // queued; set true for sync test
         'discord'                                        // optional: restrict to Discord integrations
     );
-
-
-        
-
-
-        // Example: persist internal alert (uncomment if you have the model/table)
-        // \CapsuleCmdr\Affinity\Models\AffinityAlert::create([
-        //     'type'         => 'corp_change',
-        //     'character_id' => $event->character_id,
-        //     'old_value'    => (string) $event->old_corporation_id,
-        //     'new_value'    => (string) $event->new_corporation_id,
-        //     'message'      => "{$charName} changed corporation: {$oldCorpStr} → {$newCorpStr}",
-        //     'user_ids'     => $ownerIdsArray,
-        // ]);
-
-        // Optional Discord webhook
-        // if ($webhook = config('affinity.discord_webhook_url')) {
-        //     try {
-        //         Http::asJson()->post($webhook, [
-        //             'content' => "**Corporation Change Detected**\n"
-        //                        ."**Character:** {$charName} ({$event->character_id})\n"
-        //                        ."**From:** {$oldCorpStr}\n"
-        //                        ."**To:** {$newCorpStr}",
-        //         ]);
-        //     } catch (\Throwable $e) {
-        //         Log::error('Affinity Discord webhook failed', ['error' => $e->getMessage()]);
-        //     }
-        // }
     }
 }
