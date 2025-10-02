@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Event;
 
 use CapsuleCmdr\Affinity\Providers\AffinityEventServiceProvider;
 use Seat\Eveapi\Models\Character\CharacterInfo;
-use CapsuleCmdr\Affinity\Observers\CharacterInfoObserver;
+
+use Seat\Eveapi\Models\Character\CharacterAffiliation;
+use CapsuleCmdr\Affinity\Observers\CharacterAffiliationObserver;
 
 class AffinityServiceProvider extends AbstractSeatPlugin
 {
@@ -26,7 +28,7 @@ class AffinityServiceProvider extends AbstractSeatPlugin
         
         $this->addMigrations();
         
-
+        CharacterAffiliation::observe(CharacterAffiliationObserver::class);
     }
     private function addPublications(): void
     {
