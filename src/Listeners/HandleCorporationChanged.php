@@ -21,7 +21,7 @@ class HandleCorporationChanged implements ShouldQueue
 
     public function handle(CorporationChanged $event): void
     {
-        Log::warning("Affinity: Corp Changed Lisener Fired.");
+        Log::warning("Affinity: Corp Changed Listener Fired.");
         // Load character
         $char = CharacterInfo::find($event->character_id);
         if (! $char) {
@@ -65,6 +65,21 @@ class HandleCorporationChanged implements ShouldQueue
             'new_corp_id'  => $event->new_corporation_id,
             'owners'       => $ownerIdsArray,
         ]);
+
+        affinity_notify(
+        'affinity.notification_corp_changed',           // <-- must match your config key
+        [
+            $charName,                                   // character (string)
+            (int) $event->character_id,                  // character_id
+            (string) $oldCorpStr,                        // old_corporation (name or ID-as-string)
+            (int) $event->old_corporation_id,            // old_corporation_id
+            (string) $newCorpStr,                        // new_corporation (name or ID-as-string)
+            (int) $event->new_corporation_id,            // new_corporation_id
+            \Carbon\Carbon::now(),                       // at (Carbon)
+        ],
+        false,                                           // queued; set true for sync test
+        'discord'                                        // optional: restrict to Discord integrations
+    );
 
 
         
