@@ -21,7 +21,7 @@ class AddUnlinkedEntity extends Command
                             {identifier : Character ID (number) or exact Character Name}
                             {--no-fetch : Do not call ESI; insert only what is provided}';
 
-    protected $description = 'Add or update an unlinked character in SeAT using public ESI data.';
+    protected $description = 'Add or update an unlinked character in SeAT using public ESI data (models only).';
 
     public function handle(): int
     {
@@ -46,11 +46,11 @@ class AddUnlinkedEntity extends Command
                 }
             }
 
-            // Stub only (no ESI)
-            CharacterInfo::updateOrCreate(['character_id' => $characterId], [
-                // if your schema forces gender NOT NULL, worst case set a placeholder:
-                'gender' => 'male',
-            ]);
+            // Stub only (no ESI). Provide minimal values for NOT NULL columns in your schema.
+            CharacterInfo::updateOrCreate(
+                ['character_id' => $characterId],
+                ['gender' => 'male'] // satisfy NOT NULL if your schema requires it
+            );
             $this->warn("⚠️ Inserted stub with ID only (no ESI data).");
             return self::SUCCESS;
         }
@@ -135,20 +135,24 @@ class AddUnlinkedEntity extends Command
             if (!$charResp->ok()) return null;
             $char = $charResp->json();
 
-            // 2) Corporation
+            // 2) Corporation (full public payload)
             $corp = [];
             if (!empty($char['corporation_id'])) {
                 $corpResp = Http::withHeaders($headers)
                     ->get("https://esi.evetech.net/latest/corporations/{$char['corporation_id']}/");
-                if ($corpResp->ok()) $corp = $corpResp->json();
+                if ($corpResp->ok()) {
+                    $corp = $corpResp->json();
+                }
             }
 
-            // 3) Alliance
+            // 3) Alliance (include executor corp if present)
             $ally = [];
             if (!empty($char['alliance_id'])) {
                 $allyResp = Http::withHeaders($headers)
                     ->get("https://esi.evetech.net/latest/alliances/{$char['alliance_id']}/");
-                if ($allyResp->ok()) $ally = $allyResp->json();
+                if ($allyResp->ok()) {
+                    $ally = $allyResp->json();
+                }
             }
 
             // 4) Portraits
@@ -162,24 +166,35 @@ class AddUnlinkedEntity extends Command
             $history = $historyResp->ok() ? $historyResp->json() : [];
 
             return [
-                'character_id'        => $characterId,
-                'name'                => $char['name'] ?? null,
-                'security_status'     => $char['security_status'] ?? null,
-                'birthday'            => $char['birthday'] ?? null,
-                'gender'              => $char['gender'] ?? null,
-                'description'         => $char['description'] ?? null,
-                'race_id'             => $char['race_id'] ?? null,
-                'bloodline_id'        => $char['bloodline_id'] ?? null,
-                'ancestry_id'         => $char['ancestry_id'] ?? null,
-                'faction_id'          => $char['faction_id'] ?? null,
-                'corporation_id'      => $char['corporation_id'] ?? null,
-                'corporation_name'    => $corp['name'] ?? null,
-                'corporation_ticker'  => $corp['ticker'] ?? null,
-                'alliance_id'         => $char['alliance_id'] ?? null,
-                'alliance_name'       => $ally['name'] ?? null,
-                'alliance_ticker'     => $ally['ticker'] ?? null,
-                'portrait'            => $portrait,
-                'corp_history'        => $history,
+                'character_id'          => $characterId,
+                'name'                  => $char['name'] ?? null,
+                'security_status'       => $char['security_status'] ?? null,
+                'birthday'              => $char['birthday'] ?? null,
+                'gender'                => $char['gender'] ?? null,
+                'description'           => $char['description'] ?? null,
+                'race_id'               => $char['race_id'] ?? null,
+                'bloodline_id'          => $char['bloodline_id'] ?? null,
+                'ancestry_id'           => $char['ancestry_id'] ?? null,
+                'faction_id'            => $char['faction_id'] ?? null,
+
+                'corporation_id'        => $char['corporation_id'] ?? null,
+                'corporation_name'      => $corp['name'] ?? null,
+                'corporation_ticker'    => $corp['ticker'] ?? null,
+                'corporation_members'   => $corp['member_count'] ?? null,
+                'corporation_tax_rate'  => $corp['tax_rate'] ?? null,
+                'corporation_ceo_id'    => $corp['ceo_id'] ?? null,
+                'corporation_creator_id'=> $corp['creator_id'] ?? null,
+                'corporation_date_founded' => $corp['date_founded'] ?? null,
+                'corporation_faction_id'=> $corp['faction_id'] ?? null,
+                'corporation_url'       => $corp['url'] ?? null,
+
+                'alliance_id'           => $char['alliance_id'] ?? null,
+                'alliance_name'         => $ally['name'] ?? null,
+                'alliance_ticker'       => $ally['ticker'] ?? null,
+                'alliance_executor_corporation_id' => $ally['executor_corporation_id'] ?? null,
+
+                'portrait'              => $portrait,
+                'corp_history'          => $history,
             ];
         } catch (\Throwable $e) {
             Log::error('AFFINITY07: Exception fetching character basics', [
@@ -196,14 +211,13 @@ class AddUnlinkedEntity extends Command
     protected function persistPublicBundle(int $characterId, array $data): void
     {
         // --- CharacterInfo ---
-        // Write all commonly present public columns, including required 'gender'
         CharacterInfo::updateOrCreate(
             ['character_id' => $characterId],
             array_filter([
                 'name'            => $data['name'] ?? null,
                 'security_status' => $data['security_status'] ?? null,
                 'birthday'        => !empty($data['birthday']) ? Carbon::parse($data['birthday']) : null,
-                'gender'          => $data['gender'] ?? 'male', // <- ensure NOT NULL
+                'gender'          => $data['gender'] ?? 'male', // ensure NOT NULL if required
                 'description'     => $data['description'] ?? null,
                 'race_id'         => $data['race_id'] ?? null,
                 'bloodline_id'    => $data['bloodline_id'] ?? null,
@@ -226,10 +240,21 @@ class AddUnlinkedEntity extends Command
             CorporationInfo::updateOrCreate(
                 ['corporation_id' => (int)$data['corporation_id']],
                 array_filter([
-                    'name'        => $data['corporation_name'] ?? null,
-                    'ticker'      => $data['corporation_ticker'] ?? null,
-                    'alliance_id' => $data['alliance_id'] ?? null,
-                ], fn($v) => !is_null($v))
+                    'name'         => $data['corporation_name'] ?? null,
+                    'ticker'       => $data['corporation_ticker'] ?? null,
+                    // cover NOT NULLs / common columns
+                    'member_count' => $data['corporation_members'] ?? 0,
+                    'tax_rate'     => $data['corporation_tax_rate'] ?? 0.0,
+                    'ceo_id'       => $data['corporation_ceo_id'] ?? null,
+                    'creator_id'   => $data['corporation_creator_id'] ?? null,
+                    'date_founded' => !empty($data['corporation_date_founded'])
+                        ? Carbon::parse($data['corporation_date_founded'])
+                        : null,
+                    'faction_id'   => $data['corporation_faction_id'] ?? null,
+                    'url'          => $data['corporation_url'] ?? null,
+                    // mirror alliance on corp if present
+                    'alliance_id'  => $data['alliance_id'] ?? null,
+                ], fn($v) => !is_null($v) || $v === 0 || $v === 0.0) // keep 0 / 0.0
             );
         }
 
@@ -238,8 +263,9 @@ class AddUnlinkedEntity extends Command
             Alliance::updateOrCreate(
                 ['alliance_id' => (int)$data['alliance_id']],
                 array_filter([
-                    'name'   => $data['alliance_name'] ?? null,
-                    'ticker' => $data['alliance_ticker'] ?? null,
+                    'name'                    => $data['alliance_name'] ?? null,
+                    'ticker'                  => $data['alliance_ticker'] ?? null,
+                    'executor_corporation_id' => $data['alliance_executor_corporation_id'] ?? null,
                 ], fn($v) => !is_null($v))
             );
         }
