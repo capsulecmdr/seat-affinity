@@ -95,7 +95,8 @@ class AffinityServiceProvider extends AbstractSeatPlugin
             \CapsuleCmdr\Affinity\Console\Commands\SyncEntities::class,
             \CapsuleCmdr\Affinity\Console\Commands\ShowEntityContacts::class,
             \CapsuleCmdr\Affinity\Console\Commands\HydrateContactEntities::class,
-            \CapsuleCmdr\Affinity\Console\Commands\CheckTrustRelationships::class,
+            \CapsuleCmdr\Affinity\Console\Commands\CheckTrustRelationships::class,            
+            \CapsuleCmdr\Affinity\Console\Commands\AddUnlinkedCharacter::class,
         ]);
     }
 
