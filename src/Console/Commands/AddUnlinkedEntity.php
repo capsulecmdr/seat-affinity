@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Seat\Eveapi\Models\Character\CharacterInfo;
 
-class AddUnlinkedCharacter extends Command
+class AddUnlinkedEntity extends Command
 {
     protected $signature = 'seat:affinity:character:add
                             {identifier : Character ID (number) or exact Character Name}
