@@ -33,7 +33,7 @@ class AddUnlinkedEntity extends Command
             'noFetch'    => $noFetch,
         ]);
 
-        // Numeric -> treat as ID
+        // Numeric → treat as ID
         if (ctype_digit($identifier)) {
             $characterId = (int) $identifier;
 
@@ -46,13 +46,16 @@ class AddUnlinkedEntity extends Command
                 }
             }
 
-            // Stub only (name unknown)
-            CharacterInfo::updateOrCreate(['character_id' => $characterId], []);
+            // Stub only (no ESI)
+            CharacterInfo::updateOrCreate(['character_id' => $characterId], [
+                // if your schema forces gender NOT NULL, worst case set a placeholder:
+                'gender' => 'male',
+            ]);
             $this->warn("⚠️ Inserted stub with ID only (no ESI data).");
             return self::SUCCESS;
         }
 
-        // Name -> must fetch
+        // Name → must fetch
         if ($noFetch) {
             $this->error('❌ When using a name, ESI lookup is required. Remove --no-fetch or use a numeric ID.');
             return self::INVALID;
@@ -159,19 +162,24 @@ class AddUnlinkedEntity extends Command
             $history = $historyResp->ok() ? $historyResp->json() : [];
 
             return [
-                'character_id'       => $characterId,
-                'name'               => $char['name'] ?? null,
-                'security_status'    => $char['security_status'] ?? null,
-                'birthday'           => $char['birthday'] ?? null,
-                'corporation_id'     => $char['corporation_id'] ?? null,
-                'corporation_name'   => $corp['name'] ?? null,
-                'corporation_ticker' => $corp['ticker'] ?? null,
-                'alliance_id'        => $char['alliance_id'] ?? null,
-                'alliance_name'      => $ally['name'] ?? null,
-                'alliance_ticker'    => $ally['ticker'] ?? null,
-                'faction_id'         => $char['faction_id'] ?? null,
-                'portrait'           => $portrait,
-                'corp_history'       => $history,
+                'character_id'        => $characterId,
+                'name'                => $char['name'] ?? null,
+                'security_status'     => $char['security_status'] ?? null,
+                'birthday'            => $char['birthday'] ?? null,
+                'gender'              => $char['gender'] ?? null,
+                'description'         => $char['description'] ?? null,
+                'race_id'             => $char['race_id'] ?? null,
+                'bloodline_id'        => $char['bloodline_id'] ?? null,
+                'ancestry_id'         => $char['ancestry_id'] ?? null,
+                'faction_id'          => $char['faction_id'] ?? null,
+                'corporation_id'      => $char['corporation_id'] ?? null,
+                'corporation_name'    => $corp['name'] ?? null,
+                'corporation_ticker'  => $corp['ticker'] ?? null,
+                'alliance_id'         => $char['alliance_id'] ?? null,
+                'alliance_name'       => $ally['name'] ?? null,
+                'alliance_ticker'     => $ally['ticker'] ?? null,
+                'portrait'            => $portrait,
+                'corp_history'        => $history,
             ];
         } catch (\Throwable $e) {
             Log::error('AFFINITY07: Exception fetching character basics', [
@@ -187,18 +195,23 @@ class AddUnlinkedEntity extends Command
      */
     protected function persistPublicBundle(int $characterId, array $data): void
     {
-        // --- CharacterInfo (do NOT set corporation/alliance here) ---
+        // --- CharacterInfo ---
+        // Write all commonly present public columns, including required 'gender'
         CharacterInfo::updateOrCreate(
             ['character_id' => $characterId],
             array_filter([
                 'name'            => $data['name'] ?? null,
                 'security_status' => $data['security_status'] ?? null,
                 'birthday'        => !empty($data['birthday']) ? Carbon::parse($data['birthday']) : null,
+                'gender'          => $data['gender'] ?? 'male', // <- ensure NOT NULL
+                'description'     => $data['description'] ?? null,
+                'race_id'         => $data['race_id'] ?? null,
+                'bloodline_id'    => $data['bloodline_id'] ?? null,
+                'ancestry_id'     => $data['ancestry_id'] ?? null,
             ], fn($v) => !is_null($v))
         );
 
         // --- CharacterAffiliation (corp/alliance/faction linkage) ---
-        // Upsert on character_id; set current public affiliations
         CharacterAffiliation::updateOrCreate(
             ['character_id' => $characterId],
             array_filter([
@@ -208,20 +221,19 @@ class AddUnlinkedEntity extends Command
             ], fn($v) => !is_null($v))
         );
 
-        // --- CorporationInfo (if present) ---
+        // --- CorporationInfo ---
         if (!empty($data['corporation_id'])) {
             CorporationInfo::updateOrCreate(
                 ['corporation_id' => (int)$data['corporation_id']],
                 array_filter([
                     'name'        => $data['corporation_name'] ?? null,
                     'ticker'      => $data['corporation_ticker'] ?? null,
-                    // mirror alliance on corp if present
                     'alliance_id' => $data['alliance_id'] ?? null,
                 ], fn($v) => !is_null($v))
             );
         }
 
-        // --- Alliance (if present) ---
+        // --- Alliance ---
         if (!empty($data['alliance_id'])) {
             Alliance::updateOrCreate(
                 ['alliance_id' => (int)$data['alliance_id']],
@@ -249,9 +261,7 @@ class AddUnlinkedEntity extends Command
 
         // --- Corporation History ---
         foreach (($data['corp_history'] ?? []) as $h) {
-            if (empty($h['corporation_id']) || empty($h['start_date'])) {
-                continue;
-            }
+            if (empty($h['corporation_id']) || empty($h['start_date'])) continue;
 
             $recordId = $h['record_id'] ?? null;
             $where = $recordId
