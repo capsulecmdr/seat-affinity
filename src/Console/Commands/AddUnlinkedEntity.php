@@ -1,6 +1,6 @@
 <?php
 
-namespace Capsulecmdr\Affinity\Console\Commands;
+namespace CapsuleCmdr\Affinity\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
