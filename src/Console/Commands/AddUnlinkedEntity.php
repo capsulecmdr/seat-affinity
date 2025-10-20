@@ -9,7 +9,7 @@ use Carbon\Carbon;
 
 // SeAT EVEAPI Models
 use Seat\Eveapi\Models\Character\CharacterInfo;
-use Seat\Eveapi\Models\Character\CharacterPortrait;
+// use Seat\Eveapi\Models\Character\CharacterPortrait;
 use Seat\Eveapi\Models\Character\CharacterCorporationHistory;
 use Seat\Eveapi\Models\Character\CharacterAffiliation;
 use Seat\Eveapi\Models\Corporation\CorporationInfo;
@@ -155,10 +155,10 @@ class AddUnlinkedEntity extends Command
                 }
             }
 
-            // 4) Portraits
-            $portraitResp = Http::withHeaders($headers)
-                ->get("https://esi.evetech.net/latest/characters/{$characterId}/portrait/");
-            $portrait = $portraitResp->ok() ? $portraitResp->json() : [];
+            // // 4) Portraits
+            // $portraitResp = Http::withHeaders($headers)
+            //     ->get("https://esi.evetech.net/latest/characters/{$characterId}/portrait/");
+            // $portrait = $portraitResp->ok() ? $portraitResp->json() : [];
 
             // 5) Corporation history
             $historyResp = Http::withHeaders($headers)
@@ -193,7 +193,6 @@ class AddUnlinkedEntity extends Command
                 'alliance_ticker'       => $ally['ticker'] ?? null,
                 'alliance_executor_corporation_id' => $ally['executor_corporation_id'] ?? null,
 
-                'portrait'              => $portrait,
                 'corp_history'          => $history,
             ];
         } catch (\Throwable $e) {
@@ -270,20 +269,20 @@ class AddUnlinkedEntity extends Command
             );
         }
 
-        // --- Portraits ---
-        if (!empty($data['portrait']) && is_array($data['portrait'])) {
-            $p = $data['portrait'];
-            CharacterPortrait::updateOrCreate(
-                ['character_id' => $characterId],
-                array_filter([
-                    'px64x64'     => $p['px64x64'] ?? null,
-                    'px128x128'   => $p['px128x128'] ?? null,
-                    'px256x256'   => $p['px256x256'] ?? null,
-                    'px512x512'   => $p['px512x512'] ?? null,
-                    'px1024x1024' => $p['px1024x1024'] ?? null,
-                ], fn($v) => !is_null($v))
-            );
-        }
+        // // --- Portraits ---
+        // if (!empty($data['portrait']) && is_array($data['portrait'])) {
+        //     $p = $data['portrait'];
+        //     CharacterPortrait::updateOrCreate(
+        //         ['character_id' => $characterId],
+        //         array_filter([
+        //             'px64x64'     => $p['px64x64'] ?? null,
+        //             'px128x128'   => $p['px128x128'] ?? null,
+        //             'px256x256'   => $p['px256x256'] ?? null,
+        //             'px512x512'   => $p['px512x512'] ?? null,
+        //             'px1024x1024' => $p['px1024x1024'] ?? null,
+        //         ], fn($v) => !is_null($v))
+        //     );
+        // }
 
         // --- Corporation History ---
         foreach (($data['corp_history'] ?? []) as $h) {
